@@ -68,6 +68,8 @@ export class DefaultUiSoundService implements UiSoundService {
       now?: () => number;
       /** Makes sure the phone will play sound (e.g. with the silent switch on) before a sound starts. */
       beforePlay?: () => Promise<void>;
+      /** Sung lines over the long-wait loop. Off for now: the song, then only the quiet loop. */
+      sungLines?: boolean;
     },
   ) {}
 
@@ -141,7 +143,7 @@ export class DefaultUiSoundService implements UiSoundService {
         handle.setVolume(WAITING_LOOP_LEVEL * Math.min(1, i / steps));
         if (i >= steps) clearInterval(rise);
       }, 50);
-      this.scheduleLine(token, LOOP_BEFORE_LINE_MS);
+      if (this.deps.sungLines) this.scheduleLine(token, LOOP_BEFORE_LINE_MS);
     } catch {
       this.song = null;
     }

@@ -362,7 +362,7 @@ describe('waiting song', () => {
 
   it('if the story is still not ready when the song ends, a quiet loop takes over until it is', async () => {
     const players = new FakePlayers();
-    const ui = new DefaultUiSoundService({ catalog, players, settings: store() });
+    const ui = new DefaultUiSoundService({ catalog, players, settings: store(), sungLines: true });
     await ui.startWaitingSong();
     players.live('waiting-song')[0].end();
     const [loop] = players.live('waiting-loop');
@@ -377,7 +377,7 @@ describe('waiting song', () => {
 
   it('during a long wait, lines follow the loop in step (a fresh loop after each), and everything fades when ready', async () => {
     const players = new FakePlayers();
-    const ui = new DefaultUiSoundService({ catalog, players, settings: store() });
+    const ui = new DefaultUiSoundService({ catalog, players, settings: store(), sungLines: true });
     await ui.startWaitingSong();
     players.live('waiting-song')[0].end();
     const [loop] = players.live('waiting-loop');
@@ -399,9 +399,19 @@ describe('waiting song', () => {
     vi.advanceTimersByTime(60000);
     expect(players.live('line-3')).toHaveLength(0); // nothing after the story opened
   });
-  it('every wait begins with the same sung line', async () => {
+  it('by default only the song and the quiet loop play: no sung lines', async () => {
     const players = new FakePlayers();
     const ui = new DefaultUiSoundService({ catalog, players, settings: store() });
+    await ui.startWaitingSong();
+    players.live('waiting-song')[0].end();
+    expect(players.live('waiting-loop')).toHaveLength(1);
+    vi.advanceTimersByTime(60000);
+    expect(players.live('line-1')).toHaveLength(0);
+    ui.stopWaitingSong(100);
+  });
+  it('every wait begins with the same sung line', async () => {
+    const players = new FakePlayers();
+    const ui = new DefaultUiSoundService({ catalog, players, settings: store(), sungLines: true });
     for (let wait = 0; wait < 2; wait++) {
       await ui.startWaitingSong();
       players.live('waiting-song')[0].end();

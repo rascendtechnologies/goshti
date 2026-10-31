@@ -15,7 +15,7 @@ real app — no Expo Go, no laptop needed.
 2. **Expo / EAS**
    - `npx eas-cli login` (your Expo account), then `npx eas-cli init` once (links the project).
    - `npm run eas:env` — copies the public Supabase URL/key from `.env` to EAS. Gemini keys are never sent.
-3. **App id** is `com.rascendtechnologies.goshti` (in `app.json`). Change it now if you want a different one —
+3. **App id** is `com.aajichipeti.app` (in `app.json`). Change it now if you want a different one —
    it cannot change after the first store upload.
 
 ## Android test build (no store account needed)

@@ -375,39 +375,39 @@ describe('waiting song', () => {
     expect(loop.released).toBe(true);
   });
 
-  it('during a long wait, sung lines rotate (loop steps aside for each), and everything fades when ready', async () => {
+  it('during a long wait, lines follow the loop in step (a fresh loop after each), and everything fades when ready', async () => {
     const players = new FakePlayers();
     const ui = new DefaultUiSoundService({ catalog, players, settings: store() });
     await ui.startWaitingSong();
     players.live('waiting-song')[0].end();
     const [loop] = players.live('waiting-loop');
-    vi.advanceTimersByTime(8100);
+    vi.advanceTimersByTime(3300); // exactly 4 pulses of loop, then the first line
     const [l1] = players.live('line-1');
     expect(l1).toBeDefined();
-    vi.advanceTimersByTime(500);
     expect(loop.volume).toBe(0); // the line has its own music; the loop steps aside
     l1.end();
-    vi.advanceTimersByTime(1300);
-    expect(loop.volume).toBeCloseTo(0.22);
-    vi.advanceTimersByTime(10800);
+    expect(loop.released).toBe(true);
+    const loop2 = players.live('waiting-loop').find((p) => p !== loop && !p.released)!;
+    expect(loop2).toBeDefined(); // a new loop starts on its first beat as the line ends
+    vi.advanceTimersByTime(3300);
     const [l2] = players.live('line-2');
     expect(l2).toBeDefined();
     expect(ui.stopWaitingSong(800)).toBe(true);
     vi.advanceTimersByTime(900);
     expect(l2.released).toBe(true);
-    expect(loop.released).toBe(true);
+    expect(loop2.released).toBe(true);
     vi.advanceTimersByTime(60000);
     expect(players.live('line-3')).toHaveLength(0); // nothing after the story opened
   });
-
-  it('the next wait continues the rotation with a different line', async () => {
+  it('every wait begins with the same sung line', async () => {
     const players = new FakePlayers();
     const ui = new DefaultUiSoundService({ catalog, players, settings: store() });
-    for (const expected of ['line-1', 'line-2']) {
+    for (let wait = 0; wait < 2; wait++) {
       await ui.startWaitingSong();
       players.live('waiting-song')[0].end();
-      vi.advanceTimersByTime(8100);
-      expect(players.live(expected)).toHaveLength(1);
+      vi.advanceTimersByTime(3300);
+      expect(players.live('line-1')).toHaveLength(1);
+      expect(players.live('line-2')).toHaveLength(0);
       ui.stopWaitingSong(100);
       vi.advanceTimersByTime(200);
     }

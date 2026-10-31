@@ -36,13 +36,13 @@ export interface UiSoundService {
 const WAITING_SONG_LEVEL = 0.45;
 /** After the song: a quiet instrumental loop until the story is ready. */
 const WAITING_LOOP_LEVEL = 0.22;
-const LOOP_FADE_IN_MS = 1500;
-/** During a long wait: a sung line over the loop, first after this long… */
-const FIRST_LINE_AFTER_MS = 8000;
-/** …then this long after each line ends (so roughly every 20 s). */
-const LINE_GAP_MS = 12000;
-/** Each line carries its own music (in its own key), so the loop steps aside while it plays. */
-const LOOP_UNDER_LINE_LEVEL = 0;
+const LOOP_FADE_IN_MS = 200;
+/**
+ * The song, the loop and every sung line keep the same 0.8 s pulse and are a whole number of
+ * pulses long. The loop always restarts from its first beat right after the song or a line,
+ * and the next line comes after exactly 4 pulses, so the music never stumbles between them.
+ */
+const LOOP_BEFORE_LINE_MS = 3200;
 
 /** Ignore a repeat of the same sound within this window (double taps, re-renders). */
 const REPEAT_GUARD_MS = 400;
@@ -102,6 +102,7 @@ export class DefaultUiSoundService implements UiSoundService {
 
   async startWaitingSong(): Promise<void> {
     if (this.song) return;
+    this.nextLine = 0; // every wait begins with the same sung lines, in the same order
     const token = ++this.songToken;
     if (!(await this.isEnabled()) || token !== this.songToken) return;
     const source = this.deps.catalog.waitingSong();
@@ -140,7 +141,7 @@ export class DefaultUiSoundService implements UiSoundService {
         handle.setVolume(WAITING_LOOP_LEVEL * Math.min(1, i / steps));
         if (i >= steps) clearInterval(rise);
       }, 50);
-      this.scheduleLine(token, FIRST_LINE_AFTER_MS);
+      this.scheduleLine(token, LOOP_BEFORE_LINE_MS);
     } catch {
       this.song = null;
     }
@@ -159,43 +160,21 @@ export class DefaultUiSoundService implements UiSoundService {
         const handle = this.deps.players.create(source, { volume: WAITING_SONG_LEVEL });
         const line = { handle, fade: null as ReturnType<typeof setInterval> | null, level: WAITING_SONG_LEVEL };
         this.line = line;
-        this.rampLoop(loop, LOOP_UNDER_LINE_LEVEL, 400);
+        loop.handle.setVolume(0); // each line brings its own music
         handle.onEnd(() => {
           handle.release();
           if (this.line === line) this.line = null;
           if (token !== this.songToken || this.song !== loop || loop.fade) return;
-          this.rampLoop(loop, WAITING_LOOP_LEVEL, 1200);
-          this.scheduleLine(token, LINE_GAP_MS);
+          // A fresh loop starts on its first beat, exactly where the line ended.
+          loop.handle.release();
+          this.song = null;
+          this.startLoop(token);
         });
         handle.play();
       } catch {
         this.line = null;
       }
     }, delayMs);
-  }
-
-  private loopRamp: ReturnType<typeof setInterval> | null = null;
-
-  /** Smoothly moves the loop's volume (it is the "song" slot while it plays). */
-  private rampLoop(loop: NonNullable<DefaultUiSoundService['song']>, to: number, ms: number) {
-    if (this.loopRamp) clearInterval(this.loopRamp);
-    const from = loop.level;
-    const steps = Math.max(1, Math.round(ms / 50));
-    let i = 0;
-    this.loopRamp = setInterval(() => {
-      i += 1;
-      if (this.song !== loop || loop.fade) {
-        if (this.loopRamp) clearInterval(this.loopRamp);
-        this.loopRamp = null;
-        return;
-      }
-      loop.level = from + ((to - from) * i) / steps;
-      loop.handle.setVolume(loop.level);
-      if (i >= steps && this.loopRamp) {
-        clearInterval(this.loopRamp);
-        this.loopRamp = null;
-      }
-    }, 50);
   }
 
   stopWaitingSong(fadeMs = 800): boolean {

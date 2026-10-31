@@ -50,43 +50,54 @@ async function upload(path: string, bytes: Uint8Array | string, type: string) {
   if (!res.ok) throw new Error(`upload ${path}: HTTP ${res.status} ${(await res.text()).slice(0, 120)}`);
 }
 
-let failed = 0;
-const lines = ['| Story | Version | Parts | Seconds | Result |', '|---|---|---|---|---|'];
-for (const story of LIBRARY) {
-  if (only.length && !only.includes(story.id)) continue;
-  for (const v of VARIANTS) {
-    const label = `${story.id}/${v.name}`;
-    try {
-      const ticket = await call({ action: 'library-voice', id: story.id, age: v.age });
-      if (!ticket.ttsAvailable) throw new Error('voice is not configured on the server');
-      const parts: { file: string; pauseAfterMs: number; bytes: number }[] = [];
-      let seconds = 0;
-      for (let i = 0; i < ticket.audioChunks; i++) {
-        let part: Json | undefined;
-        for (let attempt = 0; attempt < 2 && !part; attempt++) {
-          try {
-            part = await call({ action: 'tts-render', audioToken: ticket.audioToken, chunk: i });
-          } catch (e) {
-            if (attempt === 1) throw e;
+async function main(): Promise<number> {
+  let failed = 0;
+  const lines = ['| Story | Version | Parts | Seconds | Result |', '|---|---|---|---|---|'];
+  for (const story of LIBRARY) {
+    if (only.length && !only.includes(story.id)) continue;
+    for (const v of VARIANTS) {
+      const label = `${story.id}/${v.name}`;
+      try {
+        const ticket = await call({ action: 'library-voice', id: story.id, age: v.age });
+        if (!ticket.ttsAvailable) throw new Error('voice is not configured on the server');
+        const parts: { file: string; pauseAfterMs: number; bytes: number }[] = [];
+        let seconds = 0;
+        for (let i = 0; i < ticket.audioChunks; i++) {
+          let part: Json | undefined;
+          for (let attempt = 0; attempt < 2 && !part; attempt++) {
+            try {
+              part = await call({ action: 'tts-render', audioToken: ticket.audioToken, chunk: i });
+            } catch (e) {
+              if (attempt === 1) throw e;
+            }
           }
+          const bytes = Buffer.from(String(part!.base64), 'base64');
+          await upload(`${story.id}/${v.name}/part-${i}.wav`, bytes, 'audio/wav');
+          parts.push({ file: `part-${i}.wav`, pauseAfterMs: Number(part!.pauseAfterMs) || 0, bytes: bytes.length });
+          seconds += Math.max(0, (bytes.length - 44) / 48000);
         }
-        const bytes = Buffer.from(String(part!.base64), 'base64');
-        await upload(`${story.id}/${v.name}/part-${i}.wav`, bytes, 'audio/wav');
-        parts.push({ file: `part-${i}.wav`, pauseAfterMs: Number(part!.pauseAfterMs) || 0, bytes: bytes.length });
-        seconds += Math.max(0, (bytes.length - 44) / 48000);
+        const manifest = { v: 1, id: story.id, variant: v.name, chunks: parts, madeAt: new Date().toISOString() };
+        await upload(`${story.id}/${v.name}/manifest.json`, JSON.stringify(manifest), 'application/json');
+        console.log(`✓ ${label}: ${parts.length} parts, ${seconds.toFixed(0)} s`);
+        lines.push(`| ${story.title} | ${v.name} | ${parts.length} | ${seconds.toFixed(0)} | ✓ |`);
+      } catch (e) {
+        failed++;
+        const msg = (e as Error).message;
+        console.log(`✗ ${label}: ${msg}`);
+        console.log(`::error title=Voice not made (${label})::${msg.replace(/\s+/g, ' ').slice(0, 300)}`);
+        lines.push(`| ${story.title} | ${v.name} | – | – | ✗ ${msg} |`);
       }
-      const manifest = { v: 1, id: story.id, variant: v.name, chunks: parts, madeAt: new Date().toISOString() };
-      await upload(`${story.id}/${v.name}/manifest.json`, JSON.stringify(manifest), 'application/json');
-      console.log(`✓ ${label}: ${parts.length} parts, ${seconds.toFixed(0)} s`);
-      lines.push(`| ${story.title} | ${v.name} | ${parts.length} | ${seconds.toFixed(0)} | ✓ |`);
-    } catch (e) {
-      failed++;
-      const msg = (e as Error).message;
-      console.log(`✗ ${label}: ${msg}`);
-      lines.push(`| ${story.title} | ${v.name} | – | – | ✗ ${msg} |`);
     }
   }
+  console.log('\n' + lines.join('\n'));
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+  return failed ? 1 : 0;
 }
-console.log('\n' + lines.join('\n'));
-if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
-process.exit(failed ? 1 : 0);
+
+main().then(
+  (code) => process.exit(code),
+  (e) => {
+    console.log(`::error title=Pre-render stopped::${String((e as Error).message).slice(0, 300)}`);
+    process.exit(1);
+  },
+);

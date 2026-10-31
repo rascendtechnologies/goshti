@@ -32,6 +32,8 @@ function resolveStoryBackend(): StoryBackendConfig {
 
 export const config = {
   storyBackend: resolveStoryBackend(),
+  /** Public Supabase Storage folder with the library stories' Aaji voice, made once (see the Pre-render workflow). */
+  libraryVoiceBase: supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/library-voice` : '',
   /** Whole story across all backend steps (real Gemini stories can take a few minutes). */
   storyRequestTimeoutMs: 400_000,
   /**

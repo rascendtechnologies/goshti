@@ -45,7 +45,7 @@ export const deleteAllPersonalData = () =>
 
 // Aaji's real voice (rendered on the backend, saved on the phone). Native only; needs a backend.
 const voiceClient =
-  backend.kind === 'http' && Platform.OS !== 'web' ? new BackendVoiceClient(backend.url, backend.headers) : null;
+  backend.kind === 'http' && Platform.OS !== 'web' ? new BackendVoiceClient(backend.url, backend.headers, undefined, config.libraryVoiceBase) : null;
 export const voiceService: VoiceService | null =
   voiceClient
     ? new VoiceService({

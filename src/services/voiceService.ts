@@ -160,15 +160,65 @@ export class VoiceService {
   }
 }
 
+const PRERENDERED_PREFIX = 'pre:';
+
+interface PrerenderedManifest {
+  base: string;
+  chunks: { file: string; pauseAfterMs: number }[];
+}
+
+/** Bytes → base64 without a Buffer (works in the app). */
+export function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+
 /** Backend client: same endpoint and headers as story generation. */
 export class BackendVoiceClient implements VoiceClient {
   constructor(
     private readonly url: string,
     private readonly headers: Record<string, string>,
     private readonly timeoutMs = 120_000,
+    /** Public folder with voices made once for the library stories; empty = always make them on demand. */
+    private readonly libraryBase = '',
   ) {}
 
+  private readonly manifests = new Map<string, PrerenderedManifest>();
+
+  /** The voice made once for this library story, if it is there. */
+  private async prerendered(libraryId: string, age: number): Promise<{ token: string; manifest: PrerenderedManifest } | null> {
+    if (!this.libraryBase) return null;
+    const variant = age <= 5 ? 'young' : 'older';
+    const token = `${PRERENDERED_PREFIX}${libraryId}:${variant}`;
+    try {
+      const manifest = await this.fetchManifest(token);
+      return manifest ? { token, manifest } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchManifest(token: string): Promise<PrerenderedManifest | null> {
+    const cached = this.manifests.get(token);
+    if (cached) return cached;
+    const [id, variant] = token.slice(PRERENDERED_PREFIX.length).split(':');
+    const res = await fetch(`${this.libraryBase}/${id}/${variant}/manifest.json`, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) return null;
+    const body = (await res.json().catch(() => null)) as { chunks?: { file?: unknown; pauseAfterMs?: unknown }[] } | null;
+    const chunks = body?.chunks;
+    if (!Array.isArray(chunks) || chunks.length === 0 || chunks.some((c) => typeof c.file !== 'string')) return null;
+    const manifest: PrerenderedManifest = {
+      base: `${this.libraryBase}/${id}/${variant}`,
+      chunks: chunks.map((c) => ({ file: String(c.file), pauseAfterMs: Number(c.pauseAfterMs) || 0 })),
+    };
+    this.manifests.set(token, manifest);
+    return manifest;
+  }
+
   async libraryTicket(libraryId: string, age: number): Promise<VoiceTicket | null> {
+    const pre = await this.prerendered(libraryId, age);
+    if (pre) return { token: pre.token, totalChunks: pre.manifest.chunks.length };
     const res = await fetch(this.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...this.headers },
@@ -180,6 +230,7 @@ export class BackendVoiceClient implements VoiceClient {
   }
 
   async renderChunk(token: string, chunk: number) {
+    if (token.startsWith(PRERENDERED_PREFIX)) return this.downloadChunk(token, chunk);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
@@ -195,5 +246,15 @@ export class BackendVoiceClient implements VoiceClient {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  /** A part of a voice made once and stored online: a plain download, no AI. */
+  private async downloadChunk(token: string, chunk: number) {
+    const manifest = await this.fetchManifest(token);
+    const part = manifest?.chunks[chunk];
+    if (!manifest || !part) throw new Error('stored voice part is missing');
+    const res = await fetch(`${manifest.base}/${part.file}`, { signal: AbortSignal.timeout(this.timeoutMs) });
+    if (!res.ok) throw new Error(`stored voice part failed (HTTP ${res.status})`);
+    return { base64: bytesToBase64(new Uint8Array(await res.arrayBuffer())), pauseAfterMs: part.pauseAfterMs };
   }
 }

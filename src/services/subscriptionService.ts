@@ -18,10 +18,10 @@ export interface PlanDefinition {
 
 /** Mock plan model. Prices are display-only until RevenueCat is wired in. */
 export const PLANS: Record<PlanId, PlanDefinition> = {
-  FREE: { id: 'FREE', name: 'GOSHTI', monthlyLimit: 2, prices: [] },
+  FREE: { id: 'FREE', name: 'आजीची पेटी', monthlyLimit: 2, prices: [] },
   PLUS: {
     id: 'PLUS',
-    name: 'GOSHTI Plus',
+    name: 'आजीची पेटी Plus',
     monthlyLimit: 15,
     prices: [
       { amount: 249, currency: 'INR', label: '₹249', period: 'month' },

@@ -212,7 +212,7 @@ export class ClipAudioService implements AudioService {
   private setLockScreen(active: boolean) {
     if (!this.options.lockScreen || !this.player) return;
     try {
-      if (active) this.player.setActiveForLockScreen?.(true, { title: this.title, artist: 'गोष्टी' });
+      if (active) this.player.setActiveForLockScreen?.(true, { title: this.title, artist: 'आजीची पेटी' });
       else this.player.setActiveForLockScreen?.(false);
     } catch {
       // ignore: background controls are optional

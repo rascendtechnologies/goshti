@@ -21,7 +21,7 @@ const ROWS: { label: string; free: string; plus: string }[] = [
   { label: 'आजीचा आवाज आणि गोष्टीचा दर्जा', free: 'सारखाच', plus: 'सारखाच' },
 ];
 
-/** Parent mode only: what the free plan and GOSHTI Plus each include, side by side. */
+/** Parent mode only: what the free plan and आजीची पेटी Plus each include, side by side. */
 export function PlanComparison({ currentPlan }: Props) {
   return (
     <View style={styles.card}>

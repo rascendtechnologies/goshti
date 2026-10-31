@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 
 import { childProfileService } from '@/services';
 import type { ChildAge, ChildGender, ChildProfile } from '@/types/models';
@@ -7,18 +8,21 @@ export function useChildProfile() {
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
-    childProfileService.getProfile().then((p) => {
-      if (active) {
-        setProfile(p);
-        setLoading(false);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Read again whenever the screen comes back into view, so a name changed elsewhere shows at once.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      childProfileService.getProfile().then((p) => {
+        if (active) {
+          setProfile(p);
+          setLoading(false);
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   const save = useCallback(async (input: { name: string; age: ChildAge; gender?: ChildGender }) => {
     const saved = await childProfileService.saveProfile(input);

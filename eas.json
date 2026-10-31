@@ -11,14 +11,18 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DEFAULT_PLAN": "PLUS"
+        "EXPO_PUBLIC_DEFAULT_PLAN": "PLUS",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_lyMjJJsAmPPYeBihadjIKUpfgVO",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_YUHgZHOlHYrkNjmhEkSoMoIsqlB"
       }
     },
     "production": {
       "environment": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_DEFAULT_PLAN": "FREE"
+        "EXPO_PUBLIC_DEFAULT_PLAN": "FREE",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_lyMjJJsAmPPYeBihadjIKUpfgVO",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_YUHgZHOlHYrkNjmhEkSoMoIsqlB"
       }
     }
   },

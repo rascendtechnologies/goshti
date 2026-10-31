@@ -4,7 +4,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 
 import { BRAND } from '@/brand';
 import { config } from '@/config';
-import { AppText, BackButton, BigButton, GenderSelector, ParentGate, PlanCard, Screen } from '@/components';
+import { AppText, BackButton, BigButton, GenderSelector, ParentGate, PlanComparison, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { deleteAllPersonalData, feedbackService, PLANS, REACTIONS, subscriptionService, uiSoundService, type StoryReaction } from '@/services';
@@ -169,17 +169,16 @@ function ParentSettings() {
 
       {config.showPlans ? (
         <>
-        <PlanCard plan={PLANS.FREE} current={subscription?.plan === 'FREE'} />
-        <PlanCard plan={PLANS.PLUS} current={subscription?.plan === 'PLUS'} highlight />
+        <AppText variant="title">{BRAND.plusName}</AppText>
+        <PlanComparison currentPlan={subscription?.plan} />
         <AppText variant="caption" muted center>
-          दोन्ही प्लॅनमध्ये गोष्टींचा दर्जा आणि आजीचा आवाज सारखाच आहे; {BRAND.plusName} मध्ये फक्त नव्या गोष्टी जास्त मिळतात.
+          दोन्ही प्लॅनमध्ये आजीचा आवाज आणि गोष्टींचा दर्जा सारखाच आहे; {BRAND.plusName} मध्ये फक्त आजीने बनवलेल्या नव्या गोष्टी जास्त मिळतात.
         </AppText>
-
 
         {subscription?.plan !== 'PLUS' ? (
           <View style={styles.actions}>
-            <BigButton label="₹99 / महिना" onPress={() => upgrade('month')} />
-            <BigButton variant="secondary" label="₹799 / वर्ष" onPress={() => upgrade('year')} />
+            <BigButton label={`${PLANS.PLUS.prices[0].label} / महिना`} onPress={() => upgrade('month')} />
+            <BigButton variant="secondary" label={`${PLANS.PLUS.prices[1].label} / वर्ष`} onPress={() => upgrade('year')} />
             {notice ? (
               <AppText center muted>
                 {notice}

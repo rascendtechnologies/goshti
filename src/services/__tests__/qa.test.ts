@@ -10,7 +10,7 @@ import type { ChildProfile, GoshtiStory, Subscription } from '@/types/models';
 import type { StorageService } from '../storageService';
 import { BackendStoryGenerator, type GenerationResult, type StoryGenerator } from '../storyGenerator';
 import { DefaultStoryService, StoryLimitReachedError } from '../storyService';
-import { LocalSubscriptionService } from '../subscriptionService';
+import { LocalSubscriptionService, PLANS } from '../subscriptionService';
 import { MockTtsService } from '../ttsService';
 import { checkPlayableWav, VoiceService, type VoiceClient, type VoiceStates } from '../voiceService';
 
@@ -119,16 +119,16 @@ describe('cache / replay', () => {
 });
 
 describe('Free / Plus allowance', () => {
-  it('FREE: 5 new stories, then a calm limit (no generator call)', async () => {
+  it('FREE: the monthly new stories, then a calm limit (no generator call)', async () => {
     const { service, generator, subscription } = setup();
-    for (let i = 0; i < 5; i++) expect((await service.createStory(random)).status).toBe('CREATED');
-    expect((await subscription.getSubscription()).storiesGeneratedThisMonth).toBe(5);
+    for (let i = 0; i < PLANS.FREE.monthlyLimit; i++) expect((await service.createStory(random)).status).toBe('CREATED');
+    expect((await subscription.getSubscription()).storiesGeneratedThisMonth).toBe(PLANS.FREE.monthlyLimit);
     await expect(service.createStory(random)).rejects.toBeInstanceOf(StoryLimitReachedError);
-    expect(generator.calls).toBe(5);
+    expect(generator.calls).toBe(PLANS.FREE.monthlyLimit);
   });
 
   it('at the limit the child can still replay saved stories and hear library stories', async () => {
-    const { service } = setup({ plan: 'FREE', monthlyLimit: 5, storiesGeneratedThisMonth: 5 });
+    const { service } = setup({ plan: 'FREE', monthlyLimit: PLANS.FREE.monthlyLimit, storiesGeneratedThisMonth: PLANS.FREE.monthlyLimit });
     const lib = await service.playFromLibrary({ age: 5, category: 'animals' });
     expect(await service.getStory(lib.id)).not.toBeNull();
     expect((await service.listStories()).length).toBeGreaterThan(0);
@@ -143,21 +143,21 @@ describe('Free / Plus allowance', () => {
     expect((await subscription.getSubscription()).storiesGeneratedThisMonth).toBe(1);
   });
 
-  it('PLUS: 30 a month; downgrade to FREE applies the FREE limit to what is already used', async () => {
-    const plus = setup({ plan: 'PLUS', monthlyLimit: 30, storiesGeneratedThisMonth: 29 });
-    expect((await plus.subscription.getSubscription()).monthlyLimit).toBe(30);
+  it('PLUS: its monthly allowance; downgrade to FREE applies the FREE limit to what is already used', async () => {
+    const plus = setup({ plan: 'PLUS', monthlyLimit: PLANS.PLUS.monthlyLimit, storiesGeneratedThisMonth: PLANS.PLUS.monthlyLimit - 1 });
+    expect((await plus.subscription.getSubscription()).monthlyLimit).toBe(PLANS.PLUS.monthlyLimit);
     expect(await plus.subscription.canGenerateStory()).toBe(true);
     await plus.subscription.recordStoryGenerated();
     expect(await plus.subscription.canGenerateStory()).toBe(false);
 
-    const down = setup({ plan: 'FREE', monthlyLimit: 30, storiesGeneratedThisMonth: 12 });
+    const down = setup({ plan: 'FREE', monthlyLimit: PLANS.PLUS.monthlyLimit, storiesGeneratedThisMonth: PLANS.FREE.monthlyLimit + 1 });
     const s = await down.subscription.getSubscription();
-    expect(s.monthlyLimit).toBe(5);
+    expect(s.monthlyLimit).toBe(PLANS.FREE.monthlyLimit);
     expect(await down.subscription.canGenerateStory()).toBe(false);
   });
 
   it('a new month resets the counter', async () => {
-    const { subscription } = setup({ plan: 'FREE', monthlyLimit: 5, storiesGeneratedThisMonth: 5 }, '2020-01');
+    const { subscription } = setup({ plan: 'FREE', monthlyLimit: PLANS.FREE.monthlyLimit, storiesGeneratedThisMonth: PLANS.FREE.monthlyLimit }, '2020-01');
     expect((await subscription.getSubscription()).storiesGeneratedThisMonth).toBe(0);
   });
 
@@ -266,11 +266,11 @@ function wav(seconds: number): string {
 
 describe('developer test tools (dev builds only)', () => {
   it('can reset the monthly count and switch plans for testing', async () => {
-    const { subscription } = setup({ plan: 'FREE', monthlyLimit: 5, storiesGeneratedThisMonth: 5 });
+    const { subscription } = setup({ plan: 'FREE', monthlyLimit: PLANS.FREE.monthlyLimit, storiesGeneratedThisMonth: PLANS.FREE.monthlyLimit });
     expect(await subscription.canGenerateStory()).toBe(false);
     await subscription.devResetUsage();
     expect(await subscription.canGenerateStory()).toBe(true);
-    expect((await subscription.devSetPlan('PLUS')).monthlyLimit).toBe(30);
-    expect((await subscription.devSetPlan('FREE')).monthlyLimit).toBe(5);
+    expect((await subscription.devSetPlan('PLUS')).monthlyLimit).toBe(PLANS.PLUS.monthlyLimit);
+    expect((await subscription.devSetPlan('FREE')).monthlyLimit).toBe(PLANS.FREE.monthlyLimit);
   });
 });

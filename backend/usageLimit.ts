@@ -71,7 +71,7 @@ export function validDeviceId(id: unknown): string | undefined {
   return typeof id === 'string' && /^[A-Za-z0-9-]{16,64}$/.test(id) ? id : undefined;
 }
 
-async function hash(value: string, salt: string): Promise<string> {
+export async function hash(value: string, salt: string): Promise<string> {
   const data = new TextEncoder().encode(`${salt}|${value}`);
   const digest = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(digest))

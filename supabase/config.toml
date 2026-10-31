@@ -6,3 +6,8 @@ project_id = "goshti"
 enabled = true
 # The app calls with the public anon key as a Bearer token.
 verify_jwt = true
+
+[functions.revenuecat-webhook]
+enabled = true
+# RevenueCat sends no Supabase login; the function checks its own secret instead.
+verify_jwt = false

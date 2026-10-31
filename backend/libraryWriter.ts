@@ -18,6 +18,7 @@ interface AddInput {
     category?: string;
     positiveValue?: string;
     audioScript?: AudioScript;
+    shelf?: string;
   };
 }
 
@@ -53,6 +54,7 @@ export function addToLibrary(body: unknown, file: string): { ok: boolean; id?: s
     quoteSpeakers,
     ...(ambience && { ambience }),
     storyText: s.storyText,
+    ...(s.shelf === 'GREAT_PEOPLE' && { shelf: 'GREAT_PEOPLE' as const }),
   };
 
   const source = readFileSync(file, 'utf8');

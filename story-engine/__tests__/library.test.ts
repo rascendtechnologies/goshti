@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { coverageRatio, segmentStory } from '../audio';
 import { localStoryChecks } from '../evaluation';
-import { LIBRARY, libraryAudioScript, libraryToApproved, pickLibraryStory } from '../library';
+import { greatPeopleFor, LIBRARY, libraryAudioScript, libraryToApproved, pickLibraryStory, type LibraryStory } from '../library';
 import { PROFILES } from '../profiles';
 
 describe('story library', () => {
@@ -44,5 +44,36 @@ describe('story library', () => {
     expect(s.id).not.toBe('chiu-good-night');
     // When everything nearby has been heard, still returns something.
     expect(pickLibraryStory({ age: 9, avoidIds: LIBRARY.map((x) => x.id) })).toBeDefined();
+  });
+});
+
+describe('great-people shelf', () => {
+  const shelfStory: LibraryStory = {
+    ...LIBRARY[0],
+    id: 'test-great-person',
+    ageBand: '8-9',
+    shelf: 'GREAT_PEOPLE',
+  };
+
+  it('is empty for children younger than 8, and shows only stories that suit the age', () => {
+    LIBRARY.push(shelfStory);
+    try {
+      expect(greatPeopleFor(6)).toEqual([]);
+      expect(greatPeopleFor(8).map((s) => s.id)).toContain('test-great-person');
+      expect(greatPeopleFor(9).map((s) => s.id)).toContain('test-great-person');
+    } finally {
+      LIBRARY.pop();
+    }
+  });
+
+  it('is never picked at random (Aaji chooses / fallbacks)', () => {
+    LIBRARY.push(shelfStory);
+    try {
+      for (let i = 0; i < 50; i++) {
+        expect(pickLibraryStory({ age: 9 }, () => i / 50).id).not.toBe('test-great-person');
+      }
+    } finally {
+      LIBRARY.pop();
+    }
   });
 });

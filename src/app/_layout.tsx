@@ -22,6 +22,7 @@ export default function RootLayout() {
         <Stack.Screen name="generating" options={{ gestureEnabled: false }} />
         <Stack.Screen name="story/[id]" />
         <Stack.Screen name="stories" />
+        <Stack.Screen name="great-people" />
         <Stack.Screen name="parent" />
       </Stack>
     </SafeAreaProvider>

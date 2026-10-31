@@ -148,7 +148,7 @@ describe('retelling pipeline', () => {
       mainCharacter: { ...samplePlan.mainCharacter, name: 'बाळ' },
       supportingCharacters: [{ ...samplePlan.supportingCharacters[0], name: 'मनू' }],
     });
-    const r = await generateRetelling(findRetelling('tilak-shengachi-tarphale')!, 6, provider);
+    const r = await generateRetelling(findRetelling('tilak-shengachi-tarphale')!, 8, provider);
     expect(calls).toContain('rewriteStory');
     expect(r.status).toBe('FAILED');
     if (r.status === 'FAILED') expect(r.reason).toContain('invented named character');

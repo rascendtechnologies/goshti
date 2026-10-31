@@ -4,7 +4,22 @@ import type { AudioDirection } from '../schemas';
 import type { ApprovedStory, AudioScript } from '../types';
 import { LIBRARY, type LibraryStory } from './stories';
 
-export { findLibraryStory, LIBRARY, type LibraryStory } from './stories';
+export const BAND_ORDER = ['2-3', '4-5', '6-7', '8-9'] as const;
+
+/**
+ * Stories on the "great people" shelf that suit this child: a story written for an older age band
+ * is never offered to a younger child, and the shelf starts at age 8.
+ */
+/** The shelf is for the older children only. */
+export const GREAT_PEOPLE_MIN_AGE = 8;
+
+export function greatPeopleFor(age: ChildAge): LibraryStory[] {
+  if (age < GREAT_PEOPLE_MIN_AGE) return [];
+  const band = Object.values(PROFILES).find((p) => (p.ages as readonly number[]).includes(age))!.ageBand;
+  return LIBRARY.filter((s) => s.shelf === 'GREAT_PEOPLE' && BAND_ORDER.indexOf(s.ageBand) <= BAND_ORDER.indexOf(band));
+}
+
+export { findLibraryStory, LIBRARY, type LibraryShelf, type LibraryStory } from './stories';
 
 /**
  * Deterministic audio script for a library story (speakers from the story's metadata).
@@ -33,7 +48,6 @@ export function libraryAudioScript(story: LibraryStory, age?: number): AudioScri
   }).script;
 }
 
-const BAND_ORDER = ['2-3', '4-5', '6-7', '8-9'] as const;
 
 /**
  * Picks a library story for a child: same age band and category if possible, then same band,
@@ -46,7 +60,9 @@ export function pickLibraryStory(
   const band = Object.values(PROFILES).find((p) => (p.ages as readonly number[]).includes(input.age))!.ageBand;
   const bandIndex = BAND_ORDER.indexOf(band);
   const avoid = new Set(input.avoidIds ?? []);
-  const byDistance = [...LIBRARY].sort(
+  // Shelf stories (great people) are opened on purpose, never picked at random.
+  const pool = LIBRARY.filter((s) => !s.shelf);
+  const byDistance = [...pool].sort(
     (a, b) => Math.abs(BAND_ORDER.indexOf(a.ageBand) - bandIndex) - Math.abs(BAND_ORDER.indexOf(b.ageBand) - bandIndex),
   );
   const tiers: ((s: LibraryStory) => boolean)[] = [
@@ -63,7 +79,7 @@ export function pickLibraryStory(
       }
     }
   }
-  return LIBRARY[0];
+  return pool[0] ?? LIBRARY[0];
 }
 
 /** Library story in the same shape the app gets from the engine. */

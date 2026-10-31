@@ -2,17 +2,19 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CATEGORIES, type StoryCategory } from '@engine/index';
+import { CATEGORIES, greatPeopleFor, type ChildAge, type StoryCategory } from '@engine/index';
 import { BRAND } from '@/brand';
 import { AppText, BigButton, CategoryTile, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
 import { useStoryWarmUp } from '@/hooks/useStoryWarmUp';
 import { uiSoundService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing, touch } from '@/theme';
 
 /** 3. Home — pick a category, then who chooses the story. */
 export default function HomeScreen() {
   const { profile } = useChildProfile();
+  // The shelf only appears once Aaji's great-people stories are in the app, and only for ages they suit.
+  const hasGreatPeople = greatPeopleFor((profile?.age ?? 6) as ChildAge).length > 0;
   useStoryWarmUp();
   const [category, setCategory] = useState<StoryCategory | null>(null);
   // A quick tap on "पालक" only shows how to open it (press and hold) — a child's tap never opens it.
@@ -105,6 +107,17 @@ export default function HomeScreen() {
           <CategoryTile key={c.id} category={c} selected={category === c.id} onPress={() => chooseCategory(c.id)} />
         ))}
       </View>
+
+      {hasGreatPeople ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="महान व्यक्तींच्या गोष्टी"
+          onPress={() => router.push('/great-people')}
+          style={({ pressed }) => [styles.shelf, pressed && styles.pressed]}
+        >
+          <AppText variant="label">🌟 महान व्यक्तींच्या गोष्टी</AppText>
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }
@@ -116,4 +129,12 @@ const styles = StyleSheet.create({
   hint: { textAlign: 'right' },
   heading: { gap: spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  shelf: {
+    minHeight: touch.large,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceWarm,
+    paddingHorizontal: spacing.md,
+  },
 });

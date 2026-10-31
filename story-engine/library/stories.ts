@@ -24,7 +24,15 @@ export interface LibraryStory {
   quoteSpeakers: string[];
   ambience?: SfxId;
   storyText: string;
+  /**
+   * A separate shelf on Home. Stories on a shelf are never picked at random ("Aaji chooses",
+   * fallbacks): a child opens them on purpose.
+   */
+  shelf?: LibraryShelf;
 }
+
+/** GREAT_PEOPLE: childhood stories of great Indians and saints (महान व्यक्तींच्या गोष्टी). */
+export type LibraryShelf = 'GREAT_PEOPLE';
 
 const WRITTEN: LibraryStory[] = [
   // ---------------------------------------------------------------- 2–3

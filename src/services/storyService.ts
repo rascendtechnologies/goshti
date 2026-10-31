@@ -41,6 +41,8 @@ export interface StoryService {
   warmUp(): Promise<void>;
   /** A hand-written library story (always available, free, offline). */
   playFromLibrary(input: { age: ChildAge; category?: StoryCategory }): Promise<GoshtiStory>;
+  /** A specific library story (the "great people" shelf). Free, like every library story. */
+  playLibraryStory(libraryId: string, age: ChildAge): Promise<GoshtiStory | null>;
   /** Before playing: make sure Aaji's voice is (being) prepared if it can be. */
   prepareVoice(story: GoshtiStory): Promise<void>;
 }
@@ -148,6 +150,16 @@ export class DefaultStoryService implements StoryService {
     if (!existing) await this.deps.storage.saveStory(story);
     // Library stories are free: they don't count towards the monthly allowance.
     await this.ensureLibraryVoice(story.id, pick.id, input.age);
+    return story;
+  }
+
+  async playLibraryStory(libraryId: string, age: ChildAge): Promise<GoshtiStory | null> {
+    if (!findLibraryStory(libraryId)) return null;
+    const id = LIBRARY_ID_PREFIX + libraryId;
+    const existing = (await this.deps.storage.getStories()).find((s) => s.id === id);
+    const story = existing ?? this.libraryStory(libraryId, age, new Date());
+    if (!existing) await this.deps.storage.saveStory(story);
+    await this.ensureLibraryVoice(story.id, libraryId, story.age);
     return story;
   }
 

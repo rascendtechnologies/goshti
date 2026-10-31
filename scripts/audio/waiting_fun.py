@@ -1,13 +1,16 @@
-"""GOSHTI waiting song, short version with a FUN interlude (no flute): two lines, a bouncy
-marimba/xylophone phrase on the song's own 0.8 s pulse, the same two lines again, a little sparkle.
+"""GOSHTI waiting song, short version with a FUN interlude (no flute): two lines, the song's
+own music (no voice) as the interlude, on its own 0.8 s pulse, the same two lines again, a little sparkle.
 
-    python3 scripts/audio/waiting_fun.py song song.wav OUT.wav
-    python3 scripts/audio/waiting_fun.py voice manjiri.wav OUT.wav song.wav   # song.wav only sets the level
+    MUSIC=music.wav python3 scripts/audio/waiting_fun.py song song.wav OUT.wav
+    MUSIC=music.wav python3 scripts/audio/waiting_fun.py voice manjiri.wav OUT.wav song.wav   # song.wav only sets the level
+
+music.wav = the song's own accompaniment alone: python3 scripts/audio/accompaniment.py vocal.wav mix.wav music.wav
 
 The song's tanpura plucks every 0.8 s from its start, so the interlude starts on that grid
 (a whole number of 0.8 s after the first line begins) and the repeat starts on it too.
 Everything is synthesised here; the tune is written for GOSHTI.
 """
+import os
 import sys
 
 import numpy as np
@@ -146,12 +149,11 @@ def place(t):
         add(mix, dr / rms(dr) * vocal_level * 10 ** (-22 / 20), max(0.0, t - 0.1))
 
 place(T1); place(T2)
-# the fun interlude: 4 pulses (3.2 s) — wood-bar tune, plucked bass on the beat, a shaker on the off-beat
-for k in range(4):
-    add(mix, pluck(hz([51, 46, 51, 46][k]), 1.2, damp=0.999, bright=0.5), T_FLUTE + k * PULSE, 0.5 * vocal_level)
-    add(mix, shaker(seed=k), T_FLUTE + k * PULSE + 0.4, 0.9 * vocal_level)
-    add(mix, shaker(0.06, seed=9 + k), T_FLUTE + k * PULSE, 0.25 * vocal_level)
-bounce(T_FLUTE, [(75, 1), (79, 1), (82, 1), (79, 1), (80, 1), (77, 1), (79, 2)], 2.4 * vocal_level, mix)
+# the interlude: the song's own music from its start (drone, chord pad, bell), no voice —
+# it begins on the pulse grid, so it is in time with both rounds
+mus, _ = sf.read(os.environ['MUSIC'])
+cut = mus[:int((INTRO + 0.7) * FS)].copy(); cut[-int(0.7 * FS):] *= np.linspace(1, 0, int(0.7 * FS))
+add(mix, cut, T_FLUTE)
 # the ending: a quick climb and a ring
 for i, m in enumerate([79, 82, 87]):
     add(mix, xylo(m, 2.4 if i == 2 else 0.5), T_END + i * 0.22, 1.8 * vocal_level)

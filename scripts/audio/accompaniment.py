@@ -59,6 +59,9 @@ v = np.zeros(N); v[:len(voc)] = voc
 v /= np.sqrt(np.mean(v[np.abs(v) > 0.01] ** 2))
 music /= np.sqrt(np.mean(music ** 2))
 mix = v + music * 10 ** (-13 / 20)   # music sits ~13 dB under the singing
-mix /= np.max(np.abs(mix)) / 0.9
+peak = np.max(np.abs(mix))
+mix /= peak / 0.9
+if len(sys.argv) > 3:  # optional: the same music alone, at the level it has inside the song
+    sf.write(sys.argv[3], music * 10 ** (-13 / 20) / peak * 0.9, fs)
 sf.write(sys.argv[2], mix, fs)
 print(f'{TOTAL:.1f}s written')

@@ -37,6 +37,8 @@ export interface VoiceClient {
 export interface VoiceFileStore {
   save(storyId: string, index: number, base64: string): Promise<string>;
   remove(storyId: string): Promise<void>;
+  /** Where a saved part is on this phone right now, or null if the file is gone. */
+  locate?(storyId: string, index: number): string | null;
 }
 
 export interface VoiceStateStore {
@@ -124,6 +126,31 @@ export class VoiceService {
       });
     }
     void this.render(storyId);
+  }
+
+  /**
+   * Saved parts are found again by name, not by the address stored earlier: after an app
+   * update the app's folder can move, and an old address would play silence. Parts whose
+   * file is really gone are made (or downloaded) again.
+   */
+  async verify(storyId: string): Promise<void> {
+    const locate = this.deps.files.locate;
+    const state = await this.get(storyId);
+    if (!locate || !state) return;
+    let changed = false;
+    const parts = state.parts.map((part, i) => {
+      if (!part) return part;
+      const uri = locate.call(this.deps.files, storyId, i);
+      if (!uri) {
+        changed = true;
+        return null;
+      }
+      if (uri !== part.uri) changed = true;
+      return { ...part, uri };
+    });
+    if (!changed) return;
+    const missing = parts.some((p) => !p);
+    await this.put(storyId, { ...state, parts, status: missing ? 'rendering' : state.status });
   }
 
   /** Renders missing parts in order. Safe to call repeatedly; resumes after interruptions. */

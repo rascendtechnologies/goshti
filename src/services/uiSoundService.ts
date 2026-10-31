@@ -66,6 +66,8 @@ export class DefaultUiSoundService implements UiSoundService {
       settings: SettingsStore;
       volume?: number;
       now?: () => number;
+      /** Makes sure the phone will play sound (e.g. with the silent switch on) before a sound starts. */
+      beforePlay?: () => Promise<void>;
     },
   ) {}
 
@@ -80,6 +82,7 @@ export class DefaultUiSoundService implements UiSoundService {
     if (now - (this.lastPlayed.get(id) ?? -Infinity) < REPEAT_GUARD_MS) return false;
     const source = this.deps.catalog.ui(id);
     if (!source) return false;
+    await this.deps.beforePlay?.().catch(() => {});
     this.lastPlayed.set(id, now);
     try {
       // One UI sound at a time — a new one replaces the previous, never stacks.
@@ -103,6 +106,8 @@ export class DefaultUiSoundService implements UiSoundService {
     if (!(await this.isEnabled()) || token !== this.songToken) return;
     const source = this.deps.catalog.waitingSong();
     if (!source) return;
+    await this.deps.beforePlay?.().catch(() => {});
+    if (token !== this.songToken) return;
     try {
       const handle = this.deps.players.create(source, { volume: WAITING_SONG_LEVEL });
       const song = { handle, fade: null as ReturnType<typeof setInterval> | null, level: WAITING_SONG_LEVEL };

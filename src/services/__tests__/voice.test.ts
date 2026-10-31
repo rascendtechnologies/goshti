@@ -86,6 +86,36 @@ describe('wavSeconds', () => {
   });
 });
 
+describe('VoiceService.verify', () => {
+  it('re-finds saved parts at their current address and re-makes parts whose file is gone', async () => {
+    let states: VoiceStates = {
+      s1: {
+        token: 't',
+        totalChunks: 2,
+        status: 'ready',
+        parts: [
+          { uri: 'file:///old-container/s1/part-0.wav', seconds: 2, pauseAfterMs: 0 },
+          { uri: 'file:///old-container/s1/part-1.wav', seconds: 2, pauseAfterMs: 0 },
+        ],
+      },
+    };
+    const voice = new VoiceService({
+      client: { renderChunk: async () => ({ base64: wav1s, pauseAfterMs: 0 }) },
+      files: {
+        save: async () => '',
+        remove: async () => {},
+        locate: (id, i) => (i === 0 ? `file:///new-container/${id}/part-${i}.wav` : null),
+      },
+      store: { getVoiceStates: async () => states, saveVoiceStates: async (s) => void (states = JSON.parse(JSON.stringify(s))) },
+      retries: 0,
+    });
+    await voice.verify('s1');
+    expect(states.s1.parts[0]?.uri).toBe('file:///new-container/s1/part-0.wav');
+    expect(states.s1.parts[1]).toBeNull();
+    expect(states.s1.status).toBe('rendering');
+  });
+});
+
 describe('VoiceService', () => {
   it('renders parts in order, saves them and becomes ready', async () => {
     const calls: number[] = [];

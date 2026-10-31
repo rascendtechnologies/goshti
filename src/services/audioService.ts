@@ -21,6 +21,8 @@ export interface PlaybackStatus {
    * switches to one of Aaji's ready-made stories rather than reading this one in another voice.
    */
   voiceUnavailable?: boolean;
+  /** Aaji's voice for this story isn't ready to start yet: the Play button stays off until it is. */
+  preparing?: boolean;
 }
 
 export type PlaybackListener = (status: PlaybackStatus) => void;

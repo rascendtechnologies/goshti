@@ -61,7 +61,7 @@ const soundPlayers = new ExpoSoundPlayerFactory();
 // story's sound effects, ambience and music mixed underneath at age-appropriate levels.
 export const audioService: AudioService = new LayeredStoryAudioService(
   new SmartAudioService(
-    voiceService ? new ClipAudioService(voiceService, { lockScreen: Platform.OS === 'android' }) : null,
+    voiceService ? new ClipAudioService(voiceService, { lockScreen: true }) : null,
     new SpeechAudioService(),
     voiceService,
   ),
@@ -76,6 +76,7 @@ export const uiSoundService: UiSoundService = new DefaultUiSoundService({
   catalog: bundledSounds,
   players: soundPlayers,
   settings: storageService,
+  beforePlay: prepareStoryAudio,
 });
 
 export const feedbackService: FeedbackService = new LocalFeedbackService(storageService);

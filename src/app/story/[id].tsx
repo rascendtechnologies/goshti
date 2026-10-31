@@ -94,7 +94,11 @@ export default function StoryPlayerScreen() {
 
         {status.didFinish ? <StoryFeedback value={reaction} onChange={setReaction} /> : null}
 
-        {status.waiting ? (
+        {status.preparing ? (
+          <AppText variant="caption" muted center>
+            आजी गोष्ट तपासतेय...
+          </AppText>
+        ) : status.waiting ? (
           <AppText variant="caption" muted center>
             आजी लवकरच गोष्ट सुरू करतेय...
           </AppText>
@@ -106,6 +110,7 @@ export default function StoryPlayerScreen() {
             accessibilityLabel={status.isPlaying ? 'थांबवा' : 'ऐका'}
             size={96}
             filled
+            disabled={!!status.preparing}
             onPress={togglePlay}
           />
         </View>

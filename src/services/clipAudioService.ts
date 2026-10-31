@@ -11,6 +11,10 @@ import type { AudioService, PlaybackListener, PlaybackStatus, SoundCue } from '.
 import { prepareStoryAudio } from './audioSession';
 import type { VoiceService, VoiceState } from './voiceService';
 
+/** Played back slightly slower than rendered, so small children can follow every word. */
+const YOUNG_RATE = 0.9;
+const OLDER_RATE = 0.95;
+
 const IDLE: PlaybackStatus = { storyId: null, isPlaying: false, positionSeconds: 0, durationSeconds: 0, didFinish: false };
 
 export class ClipAudioService implements AudioService {
@@ -42,6 +46,8 @@ export class ClipAudioService implements AudioService {
   onUnavailable: ((atStart: boolean) => void) | null = null;
 
   private title = '';
+  /** Aaji's pace: a little slower for the youngest listeners (1 = as rendered). */
+  private rate = 1;
 
   constructor(
     private readonly voice: VoiceService,
@@ -51,20 +57,22 @@ export class ClipAudioService implements AudioService {
 
   async load(story: GoshtiStory) {
     await this.unload();
+    await this.voice.verify(story.id).catch(() => {});
     this.state = await this.voice.get(story.id);
     this.fallbackDuration = story.durationSeconds;
     this.title = story.title;
+    this.rate = story.age <= 5 ? YOUNG_RATE : OLDER_RATE;
     this.index = 0;
     this.retried = false;
     this.partCues = cuePlan(story, this.state?.totalChunks);
     this.firedCues.clear();
     this.unsubscribeVoice = this.voice.subscribe(story.id, (s) => {
       this.state = s;
-      this.emit({ durationSeconds: this.totalSeconds() });
+      this.emit({ durationSeconds: this.totalSeconds(), preparing: this.isPreparing() });
       if (this.wantPlaying && this.status.waiting) this.startCurrent();
     });
     if (this.state?.status === 'rendering') void this.voice.render(story.id); // resume if interrupted
-    this.setStatus({ ...IDLE, storyId: story.id, durationSeconds: this.totalSeconds(), voice: 'aaji' });
+    this.setStatus({ ...IDLE, storyId: story.id, durationSeconds: this.totalSeconds(), voice: 'aaji', preparing: this.isPreparing() });
   }
 
   async play() {
@@ -164,11 +172,20 @@ export class ClipAudioService implements AudioService {
       this.player.replace({ uri: part.uri });
     }
     this.playerPart = this.index;
+    this.applyRate();
     this.player.play();
     this.emit({ isPlaying: true, waiting: false });
     this.startTicker();
     this.firedCues.clear();
     this.scheduleCues(0);
+  }
+
+  private applyRate() {
+    try {
+      this.player?.setPlaybackRate(this.rate);
+    } catch {
+      // the pace is a nicety: never let it stop a story
+    }
   }
 
   private onPartEnded() {
@@ -210,7 +227,7 @@ export class ClipAudioService implements AudioService {
     if (!cues?.length || !part) return;
     cues.forEach((c, i) => {
       if (this.firedCues.has(i)) return;
-      const delayMs = Math.max(0, c.at * part.seconds - fromSeconds) * 1000;
+      const delayMs = Math.max(0, c.at * part.seconds - fromSeconds) * 1000 / this.rate;
       this.cueTimers.push(setTimeout(() => this.fireCue(i), delayMs));
     });
   }
@@ -231,6 +248,12 @@ export class ClipAudioService implements AudioService {
   private clearCueTimers() {
     this.cueTimers.forEach(clearTimeout);
     this.cueTimers = [];
+  }
+
+  /** True while the first part of Aaji's voice is still being made (Play stays off until then). */
+  private isPreparing(): boolean {
+    const s = this.state;
+    return !!s && s.status === 'rendering' && !s.parts[0];
   }
 
   private totalSeconds(): number {

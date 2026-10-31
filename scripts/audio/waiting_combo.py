@@ -1,13 +1,16 @@
-"""GOSHTI waiting song, version with Manjiri's own voice.
+"""GOSHTI waiting song, version with Manjiri's own voice, in a child's voice.
 
     python3 scripts/audio/waiting_combo.py song.wav manjiri.wav OUT.wav
 
 song.wav    = the current waiting song (Rohan's sung song with its accompaniment, E-flat), mono 44.1 kHz
 manjiri.wav = Manjiri's recording (two sung phrases, no music), mono 44.1 kHz
 
-Order: the Canon flute opening -> the song's FIRST line (with its small flute reply)
-       -> a flute interlude (Pachelbel's Canon, public domain, over its own chords in E-flat)
-       -> Manjiri's line (a very quiet E-flat drone under it) -> a soft lifting flute ending.
+manjiri.wav should already be in the child voice (scripts/audio/child_voice.py --pitch-hz 360 --formant 1.52).
+
+Order: the Canon flute opening -> the WHOLE old song (all four lines, with its flute parts)
+       -> a little flute (Pachelbel's Canon, public domain, over its own chords in E-flat)
+       -> Manjiri's new lines in a child's voice (a very quiet E-flat drone under them)
+       -> a soft lifting flute ending.
 """
 import sys
 
@@ -84,8 +87,8 @@ if song.ndim > 1: song = song.mean(axis=1)
 if voice.ndim > 1: voice = voice.mean(axis=1)
 
 INTRO = 4 * BEAT        # 3.2 s Canon opening
-LINE1 = 5.15            # the song's first line ends before line 2 begins (5.25 s)
-line1 = fade(song[:int(LINE1 * FS)], 0.0 + 1e-3, 0.12)
+LINE1 = len(song) / FS  # the whole old song
+line1 = song
 vocal_level = active_rms(line1)
 
 # --- Manjiri's line: the two sung phrases, trimmed, tidied and matched to the song's loudness
@@ -107,14 +110,14 @@ hers_len = len(hers) / FS
 
 # --- timeline
 T_LINE1 = INTRO
-T_INTER = T_LINE1 + LINE1 + 0.85          # the flute reply finishes first
-INTER_BEATS = 8
+T_INTER = T_LINE1 + LINE1 - 0.3
+INTER_BEATS = 4
 T_HERS = T_INTER + INTER_BEATS * BEAT
 T_END_FLUTE = T_HERS + hers_len - 0.3
 total = T_END_FLUTE + 5.0
 mix = np.zeros(int(total * FS))
 
-# 1) Canon opening bed + flute, then the song's first line with its small reply
+# 1) Canon opening bed + flute, then the whole song with its flute parts
 bed = np.zeros(int((INTRO + 1.6) * FS)); canon_bed(bed, 0.0, 4)
 bed *= np.clip((INTRO + 1.2 - np.arange(len(bed)) / FS) / 1.2, 0, 1)
 add(mix, bed / rms(bed) * vocal_level * 10 ** (-10 / 20), 0.0)
@@ -122,14 +125,16 @@ add(mix, line1, T_LINE1)
 parts = [
     (0.15, [n('G5', 1), n('F5', 1), n('Eb5', 1), n('D5', 1), n('Eb5', 0.9, 'slide')], BEAT, -4, 20),
     (T_LINE1 + 4.6, [n('Bb5', 0.25), n('Ab5', 0.2), n('G5', 0.2), n('F5', 0.6, 'slide')], 1.0, -7, 21),
+    (T_LINE1 + 10.25, [n('Eb5', 0.8), n('F5', 0.4), n('G5', 0.8), n('Bb5', 0.8, 'slide'), n('C6', 0.9), n('Bb5', 0.55),
+                       n('G5', 0.2), n('F5', 0.2), n('Eb5', 0.2), n('D5', 0.7, 'slide')], 1.0, -9, 22),
 ]
-# 2) interlude: the Canon's second line over its chords (ends resting on F, leading home to E-flat)
-inter = [n('Eb5', 1), n('D5', 1), n('C5', 1), n('Bb4', 1), n('Ab4', 1), n('G4', 1), n('Ab4', 1), n('F4', .8, 'slide'), (None, .2)]
-assert abs(sum(x[1] for x in inter) - 8) < 1e-9
+# 2) a little flute: the first half of the Canon's second line over its chords
+inter = [n('Eb5', 1), n('D5', 1), n('C5', 1), n('Bb4', .8, 'slide'), (None, .2)]
+assert abs(sum(x[1] for x in inter) - INTER_BEATS) < 1e-9
 ib = np.zeros(int((INTER_BEATS * BEAT + 1.2) * FS)); canon_bed(ib, 0.0, INTER_BEATS)
 ib *= np.clip(np.minimum(np.arange(len(ib)) / FS / 0.05, (INTER_BEATS * BEAT + 1.0 - np.arange(len(ib)) / FS) / 1.0), 0, 1)
 add(mix, ib / rms(ib) * vocal_level * 10 ** (-10 / 20), T_INTER)
-parts.append((T_INTER, inter, BEAT, -4, 22))
+parts.append((T_INTER, inter, BEAT, -4, 24))
 # 3) a very quiet E-flat / B-flat drone under her line (no third, so it can't clash)
 drone = pad([hz(51), hz(58), hz(63)], hers_len + 1.0, a=1.0, r=1.5)
 add(mix, drone / rms(drone) * vocal_level * 10 ** (-22 / 20), T_HERS - 0.2)

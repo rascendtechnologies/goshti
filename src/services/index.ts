@@ -12,6 +12,7 @@ import { prepareStoryAudio } from './audioSession';
 import type { AudioService } from './audioService';
 import { ClipAudioService } from './clipAudioService';
 import { ExpoVoiceFileStore } from './expoVoiceFiles';
+import { deletePersonalData } from './personalData';
 import { SmartAudioService } from './smartAudioService';
 import { ChildProfileService } from './childProfileService';
 import { LocalFeedbackService, type FeedbackService } from './feedbackService';
@@ -37,6 +38,11 @@ export const storageService: StorageService = new AsyncStorageService();
 export const subscriptionService: SubscriptionService = new LocalSubscriptionService(storageService, config.defaultPlan);
 export const ttsService: TtsService = new MockTtsService();
 
+const voiceFiles = new ExpoVoiceFileStore();
+/** Parent "delete everything on this phone". */
+export const deleteAllPersonalData = () =>
+  deletePersonalData(storageService, Platform.OS === 'web' ? undefined : () => voiceFiles.removeAll());
+
 // Aaji's real voice (rendered on the backend, saved on the phone). Native only; needs a backend.
 const voiceClient =
   backend.kind === 'http' && Platform.OS !== 'web' ? new BackendVoiceClient(backend.url, backend.headers) : null;
@@ -44,7 +50,7 @@ export const voiceService: VoiceService | null =
   voiceClient
     ? new VoiceService({
         client: voiceClient,
-        files: new ExpoVoiceFileStore(),
+        files: voiceFiles,
         store: storageService,
       })
     : null;

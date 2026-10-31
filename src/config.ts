@@ -51,4 +51,9 @@ export const config = {
    * store build.
    */
   testTools: __DEV__ || process.env.EXPO_PUBLIC_TEST_TOOLS === 'true',
+  /**
+   * Plans, prices and upgrade buttons in Parent mode. OFF in store builds until real purchases
+   * (RevenueCat) exist — the stores reject buttons that cannot buy anything. On in test versions.
+   */
+  showPlans: process.env.EXPO_PUBLIC_SHOW_PLANS === 'true' || __DEV__ || process.env.EXPO_PUBLIC_TEST_TOOLS === 'true',
 };

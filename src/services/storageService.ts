@@ -43,6 +43,13 @@ export interface StorageService {
   /** Optional 😍/🙂/😐 story feedback (see feedbackService). */
   getFeedback(): Promise<FeedbackRecords>;
   saveFeedback(records: FeedbackRecords): Promise<void>;
+
+  /**
+   * Parent "delete everything": the child's profile, saved stories, favourites, prepared stories,
+   * voice records and feedback. The monthly counter and sound setting stay (deleting data must
+   * not hand out a fresh allowance).
+   */
+  clearPersonalData(): Promise<void>;
 }
 
 const KEYS = {
@@ -136,5 +143,9 @@ export class AsyncStorageService implements StorageService {
   }
   saveFeedback(records: FeedbackRecords) {
     return writeJson(KEYS.feedback, records);
+  }
+
+  async clearPersonalData() {
+    await AsyncStorage.multiRemove([KEYS.profile, KEYS.stories, KEYS.favourites, KEYS.prepared, KEYS.voice, KEYS.feedback]);
   }
 }

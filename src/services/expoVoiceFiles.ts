@@ -16,6 +16,12 @@ export class ExpoVoiceFileStore implements VoiceFileStore {
     return file.uri;
   }
 
+  /** Every saved Aaji-voice recording on this phone. */
+  async removeAll(): Promise<void> {
+    const dir = new Directory(Paths.document, 'goshti-voice');
+    if (dir.exists) dir.delete();
+  }
+
   async remove(storyId: string): Promise<void> {
     const dir = new Directory(Paths.document, 'goshti-voice', storyId);
     if (dir.exists) dir.delete();

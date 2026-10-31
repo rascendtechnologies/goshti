@@ -7,7 +7,7 @@ import { config } from '@/config';
 import { AppText, BackButton, BigButton, GenderSelector, ParentGate, PlanCard, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
 import { useSubscription } from '@/hooks/useSubscription';
-import { feedbackService, PLANS, REACTIONS, subscriptionService, uiSoundService, type StoryReaction } from '@/services';
+import { deleteAllPersonalData, feedbackService, PLANS, REACTIONS, subscriptionService, uiSoundService, type StoryReaction } from '@/services';
 import { colors, radius, spacing } from '@/theme';
 import type { Subscription } from '@/types/models';
 import { toMarathiDigits } from '@/utils/format';
@@ -38,6 +38,7 @@ function ParentSettings() {
   const [devSubscription, setDevSubscription] = useState<Subscription | null>(null);
   const subscription = devSubscription ?? loadedSubscription;
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [appSounds, setAppSounds] = useState(true);
   const [feedback, setFeedback] = useState<Record<StoryReaction, number> | null>(null);
 
@@ -61,6 +62,11 @@ function ParentSettings() {
     } catch {
       setNotice(`${BRAND.plusName} लवकरच उपलब्ध होईल.`);
     }
+  };
+
+  const deleteEverything = async () => {
+    await deleteAllPersonalData();
+    router.replace('/');
   };
 
   const atLimit = !!subscription && subscription.storiesGeneratedThisMonth >= subscription.monthlyLimit;
@@ -126,7 +132,7 @@ function ParentSettings() {
           {atLimit ? (
             <AppText muted>
               या महिन्याच्या नव्या गोष्टी पूर्ण झाल्या. मुलं आवडत्या गोष्टी पुन्हा ऐकू शकतात; पुढच्या महिन्यात नव्या गोष्टी
-              परत मिळतील. अधिक नव्या गोष्टी हव्या असल्यास खाली {BRAND.plusName} पाहू शकता.
+              परत मिळतील.{config.showPlans ? ` अधिक नव्या गोष्टी हव्या असल्यास खाली ${BRAND.plusName} पाहू शकता.` : ''}
             </AppText>
           ) : null}
         </View>
@@ -161,24 +167,44 @@ function ParentSettings() {
         </View>
       ) : null}
 
-      <PlanCard plan={PLANS.FREE} current={subscription?.plan === 'FREE'} />
-      <PlanCard plan={PLANS.PLUS} current={subscription?.plan === 'PLUS'} highlight />
-      <AppText variant="caption" muted center>
-        दोन्ही प्लॅनमध्ये गोष्टींचा दर्जा आणि आजीचा आवाज सारखाच आहे; {BRAND.plusName} मध्ये फक्त नव्या गोष्टी जास्त मिळतात.
-      </AppText>
+      {config.showPlans ? (
+        <>
+        <PlanCard plan={PLANS.FREE} current={subscription?.plan === 'FREE'} />
+        <PlanCard plan={PLANS.PLUS} current={subscription?.plan === 'PLUS'} highlight />
+        <AppText variant="caption" muted center>
+          दोन्ही प्लॅनमध्ये गोष्टींचा दर्जा आणि आजीचा आवाज सारखाच आहे; {BRAND.plusName} मध्ये फक्त नव्या गोष्टी जास्त मिळतात.
+        </AppText>
 
 
-      {subscription?.plan !== 'PLUS' ? (
-        <View style={styles.actions}>
-          <BigButton label="₹99 / महिना" onPress={() => upgrade('month')} />
-          <BigButton variant="secondary" label="₹799 / वर्ष" onPress={() => upgrade('year')} />
-          {notice ? (
-            <AppText center muted>
-              {notice}
-            </AppText>
-          ) : null}
-        </View>
+        {subscription?.plan !== 'PLUS' ? (
+          <View style={styles.actions}>
+            <BigButton label="₹99 / महिना" onPress={() => upgrade('month')} />
+            <BigButton variant="secondary" label="₹799 / वर्ष" onPress={() => upgrade('year')} />
+            {notice ? (
+              <AppText center muted>
+                {notice}
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
+        </>
       ) : null}
+
+      <View style={styles.card}>
+        <AppText variant="label">माहिती काढून टाका</AppText>
+        <AppText variant="caption" muted>
+          मुलाचं नाव, ऐकलेल्या गोष्टी, आवडत्या गोष्टी आणि आजीचे आवाज या फोनवरून कायमचे काढले जातील. ॲप नंतर पुन्हा
+          पहिल्यापासून सुरू होईल.
+        </AppText>
+        {confirmDelete ? (
+          <View style={styles.actions}>
+            <BigButton label="हो, सगळं काढून टाका" onPress={() => void deleteEverything()} />
+            <BigButton variant="secondary" label="नको" onPress={() => setConfirmDelete(false)} />
+          </View>
+        ) : (
+          <BigButton variant="secondary" label="सगळी माहिती काढून टाका" onPress={() => setConfirmDelete(true)} />
+        )}
+      </View>
     </Screen>
   );
 }

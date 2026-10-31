@@ -11,6 +11,8 @@ import {
   type StoryRequest,
 } from '@engine/index';
 
+import { getDeviceId } from './deviceId';
+
 /** Server-issued handle for rendering Aaji's voice for an approved story. */
 export interface VoiceTicket {
   token: string;
@@ -82,7 +84,8 @@ export class BackendStoryGenerator implements StoryGenerator {
   async generate(request: StoryRequest, onProgress?: ProgressListener): Promise<GenerationResult> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    let payload: Record<string, unknown> = { request };
+    const deviceId = await getDeviceId();
+    let payload: Record<string, unknown> = { request, deviceId };
     try {
       for (let step = 0; step < 20; step++) {
         const res = await fetch(this.url, {
@@ -97,7 +100,7 @@ export class BackendStoryGenerator implements StoryGenerator {
         }
         if (body.status === 'IN_PROGRESS' && typeof body.continuation === 'string') {
           if (typeof body.progressLabel === 'string') onProgress?.(body.progressLabel);
-          payload = { continuation: body.continuation };
+          payload = { continuation: body.continuation, deviceId };
           continue;
         }
         if (body.status === 'APPROVED' && isApprovedStoryShape(body.story)) {

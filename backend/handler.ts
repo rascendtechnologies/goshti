@@ -15,9 +15,10 @@ import { GeminiProvider } from '../story-engine/providers/gemini';
 import { googleAccessFromEnv } from '../story-engine/providers/googleAccess';
 import { MockStoryAIProvider } from '../story-engine/providers/mock';
 import { openState, sealState } from './continuation';
+import { checkUsage, limiterFromEnv, usageKindFor, validDeviceId, type Caller, type UsageEnv, type UsageLimiter } from './usageLimit';
 import { backendSecret, handleTts, isTtsAction, issueAudioToken, type TtsEnv } from './tts';
 
-export interface BackendEnv extends TtsEnv {
+export interface BackendEnv extends TtsEnv, UsageEnv {
   GEMINI_MODEL?: string;
   GEMINI_WRITER_MODEL?: string;
   GEMINI_CRITIC_MODEL?: string;
@@ -113,9 +114,21 @@ const STATUS_CODE: Record<StepResult['status'], number> = {
 export async function handleGenerateStory(
   body: unknown,
   env: BackendEnv,
-  options: { logger?: StoryLogger; now?: () => number } = {},
+  options: { logger?: StoryLogger; now?: () => number; limiter?: UsageLimiter | null; clientIp?: string } = {},
 ): Promise<HandlerResponse> {
   const now = options.now ?? Date.now;
+
+  // Abuse limits: a new story / a chunk of voice costs money, so each is counted per device,
+  // per network address and per day overall. The child sees the normal "try again" screens.
+  const limiter = options.limiter === undefined ? limiterFromEnv(env) : options.limiter;
+  const kind = usageKindFor(body);
+  if (limiter && kind) {
+    const caller: Caller = { deviceId: validDeviceId((body as { deviceId?: unknown } | null)?.deviceId), ip: options.clientIp };
+    const decision = await checkUsage(limiter, env, caller, kind, new Date(now()));
+    if (!decision.ok) {
+      return { status: 429, body: { status: 'FAILED', reason: 'RATE_LIMITED', limit: decision.limit } };
+    }
+  }
   if (isTtsAction(body)) return handleTts(body, env);
 
   const payload = (body && typeof body === 'object' ? body : {}) as {

@@ -8,6 +8,7 @@
  * resume. If rendering fails, the player falls back to the phone's built-in voice.
  */
 import type { VoiceTicket } from './storyGenerator';
+import { getDeviceId } from './deviceId';
 
 export interface VoicePart {
   uri: string;
@@ -171,7 +172,7 @@ export class BackendVoiceClient implements VoiceClient {
     const res = await fetch(this.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...this.headers },
-      body: JSON.stringify({ action: 'library-voice', id: libraryId, age }),
+      body: JSON.stringify({ action: 'library-voice', id: libraryId, age, deviceId: await getDeviceId() }),
     });
     const body = (await res.json().catch(() => null)) as { audioToken?: string; audioChunks?: number; ttsAvailable?: boolean } | null;
     if (!res.ok || !body?.ttsAvailable || !body.audioToken || !body.audioChunks) return null;
@@ -185,7 +186,7 @@ export class BackendVoiceClient implements VoiceClient {
       const res = await fetch(this.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...this.headers },
-        body: JSON.stringify({ action: 'tts-render', audioToken: token, chunk }),
+        body: JSON.stringify({ action: 'tts-render', audioToken: token, chunk, deviceId: await getDeviceId() }),
         signal: controller.signal,
       });
       const body = (await res.json().catch(() => null)) as { base64?: string; pauseAfterMs?: number; reason?: string } | null;

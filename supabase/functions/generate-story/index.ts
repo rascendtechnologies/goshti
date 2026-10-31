@@ -48,6 +48,20 @@ const ENV_KEYS = [
   'TTS_STYLE',
   'TTS_CHECK',
   'TTS_CHECK_MODEL',
+  // abuse limits (SUPABASE_* are provided by Supabase itself)
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'USAGE_LIMITS',
+  'USAGE_STORY_DEVICE_DAY',
+  'USAGE_STORY_DEVICE_MONTH',
+  'USAGE_STORY_IP_DAY',
+  'USAGE_STORY_GLOBAL_DAY',
+  'USAGE_VOICE_DEVICE_DAY',
+  'USAGE_VOICE_IP_DAY',
+  'USAGE_VOICE_GLOBAL_DAY',
+  'USAGE_AUDITION_DEVICE_DAY',
+  'USAGE_AUDITION_IP_DAY',
+  'USAGE_AUDITION_GLOBAL_DAY',
 ];
 
 Deno.serve(async (req: Request) => {
@@ -68,7 +82,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const result = await handleGenerateStory(body, env);
+    const clientIp = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || req.headers.get('cf-connecting-ip') || undefined;
+    const result = await handleGenerateStory(body, env, { clientIp });
     return new Response(JSON.stringify(result.body), {
       status: result.status,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json; charset=utf-8' },

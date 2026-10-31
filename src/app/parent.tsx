@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { Linking, StyleSheet, Switch, View } from 'react-native';
 
 import { BRAND } from '@/brand';
 import { config } from '@/config';
 import { AppText, BackButton, BigButton, GenderSelector, ParentGate, PlanComparison, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
 import { useSubscription } from '@/hooks/useSubscription';
-import { deleteAllPersonalData, feedbackService, PLANS, REACTIONS, subscriptionService, uiSoundService, type StoryReaction } from '@/services';
+import { BillingError, type BillingOffer, deleteAllPersonalData, feedbackService, PLANS, REACTIONS, subscriptionService, uiSoundService, type StoryReaction } from '@/services';
 import { colors, radius, spacing } from '@/theme';
 import type { Subscription } from '@/types/models';
 import { toMarathiDigits } from '@/utils/format';
@@ -41,11 +41,16 @@ function ParentSettings() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [appSounds, setAppSounds] = useState(true);
   const [feedback, setFeedback] = useState<Record<StoryReaction, number> | null>(null);
+  const [offers, setOffers] = useState<BillingOffer[]>([]);
+  const [busy, setBusy] = useState(false);
+  const realPurchases = subscriptionService.purchasesAvailable();
+  const showPlans = config.showPlans || realPurchases;
 
   useEffect(() => {
     let active = true;
     uiSoundService.isEnabled().then((on) => active && setAppSounds(on));
     feedbackService.summary().then((s) => active && setFeedback(s));
+    subscriptionService.offers().then((o) => active && setOffers(o));
     return () => {
       active = false;
     };
@@ -56,12 +61,46 @@ function ParentSettings() {
     void uiSoundService.setEnabled(on);
   };
 
+  const priceOf = (period: 'month' | 'year') =>
+    offers.find((o) => o.period === period)?.priceLabel ?? PLANS.PLUS.prices[period === 'month' ? 0 : 1].label;
+
+  const refreshPlan = async () => setDevSubscription(await subscriptionService.getSubscription());
+
   const upgrade = async (period: 'month' | 'year') => {
+    if (busy) return;
+    setBusy(true);
+    setNotice(null);
     try {
-      await subscriptionService.purchase('PLUS', period);
-    } catch {
-      setNotice(`${BRAND.plusName} लवकरच उपलब्ध होईल.`);
+      const outcome = await subscriptionService.purchase(period);
+      if (outcome === 'purchased') {
+        await refreshPlan();
+        setNotice(`${BRAND.plusName} सुरू झालं. धन्यवाद!`);
+      }
+    } catch (e) {
+      setNotice(e instanceof BillingError && realPurchases ? 'खरेदी पूर्ण झाली नाही. थोड्या वेळाने पुन्हा प्रयत्न करा.' : `${BRAND.plusName} लवकरच उपलब्ध होईल.`);
+    } finally {
+      setBusy(false);
     }
+  };
+
+  const restore = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      const active = await subscriptionService.restore();
+      await refreshPlan();
+      setNotice(active ? `${BRAND.plusName} परत मिळालं.` : 'या खात्यावर आधीची खरेदी सापडली नाही.');
+    } catch {
+      setNotice('खरेदी परत मिळवता आली नाही. थोड्या वेळाने पुन्हा प्रयत्न करा.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const manage = async () => {
+    const url = (await subscriptionService.manageUrl()) ?? undefined;
+    if (url) void Linking.openURL(url);
   };
 
   const deleteEverything = async () => {
@@ -132,7 +171,7 @@ function ParentSettings() {
           {atLimit ? (
             <AppText muted>
               या महिन्याच्या नव्या गोष्टी पूर्ण झाल्या. मुलं आवडत्या गोष्टी पुन्हा ऐकू शकतात; पुढच्या महिन्यात नव्या गोष्टी
-              परत मिळतील.{config.showPlans ? ` अधिक नव्या गोष्टी हव्या असल्यास खाली ${BRAND.plusName} पाहू शकता.` : ''}
+              परत मिळतील.{showPlans ? ` अधिक नव्या गोष्टी हव्या असल्यास खाली ${BRAND.plusName} पाहू शकता.` : ''}
             </AppText>
           ) : null}
         </View>
@@ -167,7 +206,7 @@ function ParentSettings() {
         </View>
       ) : null}
 
-      {config.showPlans ? (
+      {showPlans ? (
         <>
         <AppText variant="title">{BRAND.plusName}</AppText>
         <PlanComparison currentPlan={subscription?.plan} />
@@ -177,13 +216,27 @@ function ParentSettings() {
 
         {subscription?.plan !== 'PLUS' ? (
           <View style={styles.actions}>
-            <BigButton label={`${PLANS.PLUS.prices[0].label} / महिना`} onPress={() => upgrade('month')} />
-            <BigButton variant="secondary" label={`${PLANS.PLUS.prices[1].label} / वर्ष`} onPress={() => upgrade('year')} />
-            {notice ? (
-              <AppText center muted>
-                {notice}
+            <BigButton label={`${priceOf('month')} / महिना`} onPress={() => upgrade('month')} disabled={busy} />
+            <BigButton variant="secondary" label={`${priceOf('year')} / वर्ष`} onPress={() => upgrade('year')} disabled={busy} />
+            {realPurchases ? (
+              <AppText variant="caption" muted center>
+                सदस्यता आपोआप नूतनीकरण होते. स्टोअरच्या खात्यातून कधीही रद्द करता येते.
               </AppText>
             ) : null}
+          </View>
+        ) : realPurchases ? (
+          <BigButton variant="secondary" label="सदस्यता सांभाळा / रद्द करा" onPress={() => void manage()} />
+        ) : null}
+        {realPurchases ? <BigButton variant="secondary" label="आधीची खरेदी परत मिळवा" onPress={() => void restore()} disabled={busy} /> : null}
+        {notice ? (
+          <AppText center muted>
+            {notice}
+          </AppText>
+        ) : null}
+        {realPurchases && (config.termsUrl || config.privacyUrl) ? (
+          <View style={styles.row}>
+            {config.termsUrl ? <BigButton variant="secondary" label="अटी" onPress={() => void Linking.openURL(config.termsUrl)} /> : null}
+            {config.privacyUrl ? <BigButton variant="secondary" label="गोपनीयता" onPress={() => void Linking.openURL(config.privacyUrl)} /> : null}
           </View>
         ) : null}
         </>

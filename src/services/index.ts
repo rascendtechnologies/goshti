@@ -14,6 +14,7 @@ import { ClipAudioService } from './clipAudioService';
 import { ExpoVoiceFileStore } from './expoVoiceFiles';
 import { deletePersonalData } from './personalData';
 import { SmartAudioService } from './smartAudioService';
+import { getDeviceId } from './deviceId';
 import { ChildProfileService } from './childProfileService';
 import { LocalFeedbackService, type FeedbackService } from './feedbackService';
 import { bundledSounds } from './soundAssets';
@@ -23,7 +24,9 @@ import { AsyncStorageService, type StorageService } from './storageService';
 import { BackendStoryGenerator, LocalMockGenerator, type StoryGenerator } from './storyGenerator';
 import { RandomStoryPrefetcher } from './storyPrefetcher';
 import { DefaultStoryService, type StoryService } from './storyService';
-import { LocalSubscriptionService, type SubscriptionService } from './subscriptionService';
+import { RevenueCatBilling } from './revenueCatBilling';
+import { loadRevenueCat } from './revenueCatLoader';
+import { PurchasesSubscriptionService, type SubscriptionService } from './subscriptionService';
 import { MockTtsService, type TtsService } from './ttsService';
 import { DefaultUiSoundService, type UiSoundService } from './uiSoundService';
 import { BackendVoiceClient, VoiceService } from './voiceService';
@@ -35,7 +38,12 @@ const storyGenerator: StoryGenerator =
     : new LocalMockGenerator();
 
 export const storageService: StorageService = new AsyncStorageService();
-export const subscriptionService: SubscriptionService = new LocalSubscriptionService(storageService, config.defaultPlan);
+export const subscriptionService: SubscriptionService = new PurchasesSubscriptionService(
+  storageService,
+  config.defaultPlan,
+  // Store purchases through RevenueCat; the install id is the customer id so the server webhook matches it.
+  new RevenueCatBilling({ apiKey: config.revenueCatKey, appUserId: getDeviceId, load: loadRevenueCat }),
+);
 export const ttsService: TtsService = new MockTtsService();
 
 const voiceFiles = new ExpoVoiceFileStore();
@@ -103,6 +111,7 @@ export const storyService: StoryService = new DefaultStoryService({
 
 export { StoryGenerationError, StoryLimitReachedError } from './storyService';
 export { PLANS, PurchasesNotAvailableError } from './subscriptionService';
+export { BillingError, type BillingOffer, type BillingPeriod } from './billing';
 export type { PlaybackStatus } from './audioService';
 export { REACTIONS, type StoryReaction } from './feedbackService';
 export type { UiSoundId } from './uiSoundService';

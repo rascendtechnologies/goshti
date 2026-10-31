@@ -1,5 +1,6 @@
 import type { PlanId, Subscription } from '@/types/models';
 
+import { NoBilling, type BillingClient, type BillingOffer, type BillingPeriod, type PurchaseOutcome } from './billing';
 import type { StorageService } from './storageService';
 
 export interface PlanPrice {
@@ -35,8 +36,16 @@ export interface SubscriptionService {
   canGenerateStory(): Promise<boolean>;
   /** Call once per successfully generated new story (replays are free). */
   recordStoryGenerated(): Promise<Subscription>;
-  /** Placeholder — purchases are not implemented in the POC. */
-  purchase(planId: PlanId, period: PlanPrice['period']): Promise<never>;
+  /** True when real store purchases work (a store build with RevenueCat keys, not Expo Go). */
+  purchasesAvailable(): boolean;
+  /** Real store prices (parent's currency); empty when purchases are not available. */
+  offers(): Promise<BillingOffer[]>;
+  /** Opens the store's payment sheet. Throws BillingError when it fails. */
+  purchase(period: BillingPeriod): Promise<PurchaseOutcome>;
+  /** Brings back a subscription bought earlier (new phone, reinstall). Returns whether Plus is active. */
+  restore(): Promise<boolean>;
+  /** Store page where the parent manages / cancels the subscription, if known. */
+  manageUrl(): Promise<string | null>;
   /** DEVELOPMENT ONLY (the Parent screen shows these in dev builds): reset usage / switch plan for testing. */
   devResetUsage(): Promise<Subscription>;
   devSetPlan(plan: PlanId): Promise<Subscription>;
@@ -91,8 +100,20 @@ export class LocalSubscriptionService implements SubscriptionService {
     return next;
   }
 
-  async purchase(): Promise<never> {
+  purchasesAvailable(): boolean {
+    return false;
+  }
+  async offers(): Promise<BillingOffer[]> {
+    return [];
+  }
+  async purchase(_period?: BillingPeriod): Promise<PurchaseOutcome> {
     throw new PurchasesNotAvailableError();
+  }
+  async restore(): Promise<boolean> {
+    throw new PurchasesNotAvailableError();
+  }
+  async manageUrl(): Promise<string | null> {
+    return null;
   }
 
   async devResetUsage(): Promise<Subscription> {
@@ -105,5 +126,71 @@ export class LocalSubscriptionService implements SubscriptionService {
     const next = { ...(await this.getSubscription()), plan, monthlyLimit: PLANS[plan].monthlyLimit };
     await this.storage.saveSubscription(next);
     return next;
+  }
+}
+
+/**
+ * Plan from the store (via RevenueCat) + usage count kept on the phone. When purchases are not
+ * available (Expo Go, test builds without keys) it behaves exactly like the local service.
+ */
+export class PurchasesSubscriptionService extends LocalSubscriptionService {
+  private lastKnownPlus: boolean | null = null;
+  private lastManageUrl: string | null = null;
+
+  constructor(
+    storage: StorageService,
+    defaultPlan: PlanId,
+    private readonly billing: BillingClient = new NoBilling(),
+  ) {
+    super(storage, defaultPlan);
+  }
+
+  override purchasesAvailable(): boolean {
+    return this.billing.isAvailable();
+  }
+
+  private async refresh(): Promise<void> {
+    try {
+      const status = await this.billing.status();
+      this.lastKnownPlus = status.plusActive;
+      this.lastManageUrl = status.manageUrl;
+    } catch {
+      // Offline: keep the last known answer (the store SDK also caches it).
+    }
+  }
+
+  override async getSubscription(): Promise<Subscription> {
+    const local = await super.getSubscription();
+    if (!this.billing.isAvailable()) return local;
+    await this.refresh();
+    const plan: PlanId = this.lastKnownPlus ? 'PLUS' : 'FREE';
+    return { ...local, plan, monthlyLimit: PLANS[plan].monthlyLimit };
+  }
+
+  override offers(): Promise<BillingOffer[]> {
+    return this.billing.isAvailable() ? this.billing.offers().catch(() => []) : Promise.resolve([]);
+  }
+
+  override async purchase(period: BillingPeriod): Promise<PurchaseOutcome> {
+    const outcome = await this.billing.purchase(period);
+    if (outcome === 'purchased') this.lastKnownPlus = true;
+    return outcome;
+  }
+
+  override async restore(): Promise<boolean> {
+    const status = await this.billing.restore();
+    this.lastKnownPlus = status.plusActive;
+    this.lastManageUrl = status.manageUrl;
+    return status.plusActive;
+  }
+
+  override async manageUrl(): Promise<string | null> {
+    if (this.billing.isAvailable()) await this.refresh();
+    return this.lastManageUrl;
+  }
+
+  override async devSetPlan(plan: PlanId): Promise<Subscription> {
+    // Test tools only make sense without real purchases.
+    return this.billing.isAvailable() ? this.getSubscription() : super.devSetPlan(plan);
   }
 }

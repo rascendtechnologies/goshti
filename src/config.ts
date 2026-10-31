@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Public app configuration (inlined by Expo from EXPO_PUBLIC_* variables in .env).
  * Only PUBLIC values live here — the Gemini key is never available to the app.
@@ -30,7 +32,16 @@ function resolveStoryBackend(): StoryBackendConfig {
   return { kind: 'mock' };
 }
 
+/** Public RevenueCat SDK keys (appl_… / goog_…). Safe to ship; never put a secret key here. */
+const revenueCatKey =
+  (Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY)?.trim() || '';
+
 export const config = {
+  /** Public RevenueCat key for this platform; empty = purchases off (Expo Go, test builds). */
+  revenueCatKey,
+  /** Where the parent reads the terms and privacy policy (shown beside the purchase buttons). */
+  privacyUrl: process.env.EXPO_PUBLIC_PRIVACY_URL?.trim() || '',
+  termsUrl: process.env.EXPO_PUBLIC_TERMS_URL?.trim() || '',
   storyBackend: resolveStoryBackend(),
   /** Public Supabase Storage folder with the library stories' Aaji voice, made once (see the Pre-render workflow). */
   libraryVoiceBase: supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/library-voice` : '',

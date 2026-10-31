@@ -9,7 +9,9 @@
 import { execFileSync } from 'node:child_process';
 
 process.loadEnvFile?.('.env');
-const ALLOWED = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_PREFETCH_STORIES'];
+const ALLOWED = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_PREFETCH_STORIES',
+  // Store purchases: PUBLIC RevenueCat SDK keys (appl_… / goog_…) and the legal pages. Never a secret key.
+  'EXPO_PUBLIC_REVENUECAT_IOS_KEY', 'EXPO_PUBLIC_REVENUECAT_ANDROID_KEY', 'EXPO_PUBLIC_PRIVACY_URL', 'EXPO_PUBLIC_TERMS_URL'];
 const missing = ALLOWED.slice(0, 2).filter((k) => !process.env[k]);
 if (missing.length) {
   console.error(`Missing in .env: ${missing.join(', ')}`);

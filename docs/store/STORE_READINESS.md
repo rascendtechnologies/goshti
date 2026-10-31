@@ -8,7 +8,7 @@ Status as of 31 Oct 2026. ✅ done · 🟡 needs Rohan · 🔧 needs code (Claud
 - ✅ Plans/prices are hidden in store builds (`showPlans` is off unless a test build) — the stores reject buttons that cannot buy.
 - ✅ Parent "delete everything on this phone".
 - ✅ Child cannot chat with AI; safety screen before the AI and a critic after; fixed Marathi decline messages.
-- ✅ Bundle ids set (`com.rohanshukla.goshti`), icon + Android adaptive icons, `ITSAppUsesNonExemptEncryption: false`.
+- ✅ Bundle ids set (`com.rascendtechnologies.goshti`), icon + Android adaptive icons, `ITSAppUsesNonExemptEncryption: false`.
 
 ## Blockers before submitting
 1. 🔧 **Server limit per device.** Anyone with the app's public key can call the story server and spend your Google money. Add a per-device daily cap (and a global daily cap) on the server. Needs a small Supabase table.

@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rohanshukla.goshti",
+      "bundleIdentifier": "com.rascendtechnologies.goshti",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -21,7 +21,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.rohanshukla.goshti"
+      "package": "com.rascendtechnologies.goshti"
     },
     "web": {
       "favicon": "./assets/favicon.png",

@@ -42,7 +42,7 @@
     "experiments": {
       "typedRoutes": true
     },
-    "runtimeVersion": "exposdk:57.0.0",
+    "runtimeVersion": "exposdk:58.0.0",
     "owner": "rohan287dev",
     "extra": {
       "eas": {

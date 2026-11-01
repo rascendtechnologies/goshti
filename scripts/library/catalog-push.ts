@@ -39,32 +39,39 @@ const rows: CatalogRow[] = file
       template: s.template,
     }));
 
-const good: CatalogRow[] = [];
-for (const row of rows) {
-  const parsed = catalogRowToStory(row);
-  if ('errors' in parsed) {
-    console.error(`SKIPPED ${String(row.id)}: ${parsed.errors.join('; ')}`);
-  } else {
-    good.push({ ...row, published: publish });
+async function main() {
+  const good: CatalogRow[] = [];
+  for (const row of rows) {
+    const parsed = catalogRowToStory(row);
+    if ('errors' in parsed) {
+      console.error(`SKIPPED ${String(row.id)}: ${parsed.errors.join('; ')}`);
+    } else {
+      good.push({ ...row, published: publish });
+    }
   }
-}
-if (!good.length) {
-  console.error('nothing to send');
-  process.exit(1);
+  if (!good.length) {
+    console.error('nothing to send');
+    process.exit(1);
+  }
+
+  const res = await fetch(`${base}/rest/v1/personal_stories?on_conflict=id`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: service,
+      Authorization: `Bearer ${service}`,
+      Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(good),
+  });
+  if (!res.ok) {
+    console.error(`Supabase said ${res.status}: ${await res.text()}`);
+    process.exit(1);
+  }
+  console.log(`${good.length} story(ies) saved as ${publish ? 'PUBLISHED' : 'drafts'}: ${good.map((r) => String(r.id)).join(', ')}`);
 }
 
-const res = await fetch(`${base}/rest/v1/personal_stories?on_conflict=id`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    apikey: service,
-    Authorization: `Bearer ${service}`,
-    Prefer: 'resolution=merge-duplicates,return=minimal',
-  },
-  body: JSON.stringify(good),
-});
-if (!res.ok) {
-  console.error(`Supabase said ${res.status}: ${await res.text()}`);
+main().catch((e) => {
+  console.error(`Failed: ${(e as Error).message}`);
   process.exit(1);
-}
-console.log(`${good.length} story(ies) saved as ${publish ? 'PUBLISHED' : 'drafts'}: ${good.map((r) => String(r.id)).join(', ')}`);
+});

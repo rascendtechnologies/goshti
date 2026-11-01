@@ -7,6 +7,8 @@
  * being made. State is persisted, so saved stories replay offline and interrupted renders
  * resume. If rendering fails, the player falls back to the phone's built-in voice.
  */
+import { findPersonalStory, parsePersonalToken, personalParts, personalToken, personalVariant, type PersonalChild } from '@engine/index';
+
 import type { VoiceTicket } from './storyGenerator';
 import { getDeviceId } from './deviceId';
 
@@ -188,6 +190,7 @@ export class VoiceService {
 }
 
 const PRERENDERED_PREFIX = 'pre:';
+const PERSONAL_PREFIX = 'per:';
 
 interface PrerenderedManifest {
   base: string;
@@ -256,7 +259,46 @@ export class BackendVoiceClient implements VoiceClient {
     return { token: body.audioToken, totalChunks: body.audioChunks };
   }
 
+  /** A personal story: where the child's name is spoken it is made for this child, the rest is shared. */
+  personalTicket(storyId: string, child: PersonalChild, age: number): VoiceTicket | null {
+    const story = findPersonalStory(storyId);
+    if (!story) return null;
+    return { token: personalToken(story, child, age), totalChunks: personalParts(story, child, age).length };
+  }
+
+  private async personalChunk(token: string, chunk: number) {
+    const info = parsePersonalToken(token);
+    const story = info && findPersonalStory(info.storyId);
+    const part = story && info ? personalParts(story, info.child, info.age)[chunk] : undefined;
+    if (!story || !info || !part) throw new Error('personal story part is missing');
+    if (!part.personal && this.libraryBase) {
+      // Shared parts are recorded once for every child; a plain download.
+      try {
+        const res = await fetch(
+          `${this.libraryBase}/personal/${story.id}/${personalVariant(info.age)}/shared-${chunk}-${part.hash}.wav`,
+          { signal: AbortSignal.timeout(this.timeoutMs) },
+        );
+        if (res.ok) return { base64: bytesToBase64(new Uint8Array(await res.arrayBuffer())), pauseAfterMs: part.chunk.pauseAfterMs };
+      } catch {
+        // not stored yet — make it below
+      }
+    }
+    const body: Record<string, unknown> = { action: 'personal-render', id: story.id, age: info.age, part: chunk, hash: part.hash, deviceId: await getDeviceId() };
+    if (part.personal) Object.assign(body, { name: info.child.name, gender: info.child.gender });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const res = await fetch(this.url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...this.headers }, body: JSON.stringify(body), signal: controller.signal });
+      const json = (await res.json().catch(() => null)) as { base64?: string; pauseAfterMs?: number; reason?: string; errors?: string[] } | null;
+      if (!res.ok || !json?.base64) throw new Error(json?.reason ?? json?.errors?.join('; ') ?? `voice render failed (HTTP ${res.status})`);
+      return { base64: json.base64, pauseAfterMs: Number(json.pauseAfterMs) || part.chunk.pauseAfterMs };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async renderChunk(token: string, chunk: number) {
+    if (token.startsWith(PERSONAL_PREFIX)) return this.personalChunk(token, chunk);
     if (token.startsWith(PRERENDERED_PREFIX)) return this.downloadChunk(token, chunk);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);

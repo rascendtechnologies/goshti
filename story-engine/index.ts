@@ -23,3 +23,18 @@ export * from './variety';
 export { MockStoryAIProvider } from './providers/mock';
 export * from './library';
 export * from './retellings';
+export {
+  cleanChildName,
+  parsePersonalToken,
+  personalParts,
+  personalStoryId,
+  personalToApproved,
+  personalToken,
+  personalVariant,
+  pickPersonalStory,
+  findPersonalStory,
+  PERSONAL_STORIES,
+  type PersonalChild,
+  type PersonalPart,
+  type PersonalStory,
+} from './personal';

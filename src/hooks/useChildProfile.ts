@@ -24,7 +24,7 @@ export function useChildProfile() {
     }, []),
   );
 
-  const save = useCallback(async (input: { name: string; age: ChildAge; gender?: ChildGender }) => {
+  const save = useCallback(async (input: { name: string; age: ChildAge; gender?: ChildGender; nameMarathi?: string }) => {
     const saved = await childProfileService.saveProfile(input);
     setProfile(saved);
     return saved;

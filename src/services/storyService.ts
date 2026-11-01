@@ -4,6 +4,10 @@ import {
   LIBRARY,
   libraryToApproved,
   pickLibraryStory,
+  pickPersonalStory,
+  personalStoryId,
+  personalToApproved,
+  type PersonalChild,
   type ApprovedStory,
   type ChildAge,
   type StoryCategory,
@@ -13,6 +17,7 @@ import {
 import { createId } from '@/utils/id';
 import type { GoshtiStory, StoryRating } from '@/types/models';
 
+import { personalChildOf } from './childProfileService';
 import type { StorageService } from './storageService';
 import type { ProgressListener, StoryGenerator, VoiceTicket } from './storyGenerator';
 import type { RandomStoryPrefetcher } from './storyPrefetcher';
@@ -74,6 +79,8 @@ interface Deps {
   subscription: SubscriptionService;
   /** Gets a voice ticket for a library story (backend). Optional. */
   libraryVoiceTicket?: (libraryId: string, age: number) => Promise<VoiceTicket | null>;
+  /** Voice ticket for a personal story (name filled in per child). Optional. */
+  personalVoiceTicket?: (storyId: string, child: PersonalChild, age: number) => VoiceTicket | null;
   /** Prepares RANDOM stories ahead of time. Optional. */
   prefetcher?: RandomStoryPrefetcher;
   /** Renders Aaji's real voice for approved stories. Optional (absent = phone voice only). */
@@ -100,6 +107,17 @@ export class DefaultStoryService implements StoryService {
     }
     const recent = (await this.deps.storage.getStories()).slice(0, 8).map((s) => s.title);
     const request: StoryRequest = { ...input, avoidTitles: recent };
+
+    // "Aaji chooses": a story written once with the child's name left open comes first — the child is
+    // the hero and most of Aaji's voice is already recorded, so it costs far less than a new story.
+    if (request.mode === 'RANDOM') {
+      const personal = await this.personalStory(request);
+      if (personal) {
+        await Promise.all([this.deps.storage.saveStory(personal), wait(this.deps.minimumLatencyMs ?? 0)]);
+        await this.deps.subscription.recordStoryGenerated();
+        return { status: 'CREATED', story: personal };
+      }
+    }
 
     // A story prepared in advance plays (almost) instantly.
     const prepared =
@@ -139,6 +157,19 @@ export class DefaultStoryService implements StoryService {
       });
     }
     return outcome;
+  }
+
+  /** The next personal story for this child and category, ready to play; null if there is none. */
+  private async personalStory(request: StoryRequest): Promise<GoshtiStory | null> {
+    const [profile, stories] = await Promise.all([this.deps.storage.getChildProfile(), this.deps.storage.getStories()]);
+    const child = personalChildOf(profile);
+    if (!child) return null;
+    const story = pickPersonalStory({ age: request.age, category: request.category, child, heardIds: stories.map((s) => s.id) });
+    if (!story) return null;
+    const age = request.age as ChildAge;
+    const ticket = this.deps.personalVoiceTicket?.(story.id, child, age) ?? undefined;
+    const outcome = await this.fromApproved(personalToApproved(story, child, age), new Date(), personalStoryId(story, child), ticket);
+    return outcome.status === 'CREATED' ? outcome.story : null;
   }
 
   async playFromLibrary(input: { age: ChildAge; category?: StoryCategory }): Promise<GoshtiStory> {

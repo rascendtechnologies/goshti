@@ -4,6 +4,8 @@ import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'rea
 
 import { AgeSelector, AppText, BackButton, BigButton, GenderSelector, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
+import { cleanChildName } from '@engine/index';
+
 import { MAX_CHILD_NAME_LENGTH } from '@/services/childProfileService';
 import type { ChildAge, ChildGender, ChildProfile } from '@/types/models';
 import { colors, radius, spacing, touch, type as typography } from '@/theme';
@@ -17,13 +19,14 @@ export default function SetupScreen() {
 
 interface FormProps {
   initial: ChildProfile | null;
-  onSave: (input: { name: string; age: ChildAge; gender: ChildGender }) => Promise<unknown>;
+  onSave: (input: { name: string; age: ChildAge; gender: ChildGender; nameMarathi?: string }) => Promise<unknown>;
 }
 
 function SetupForm({ initial, onSave: save }: FormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [age, setAge] = useState<ChildAge | null>(initial?.age ?? null);
   const [gender, setGender] = useState<ChildGender | null>(initial?.gender ?? null);
+  const [nameMarathi, setNameMarathi] = useState(initial?.nameMarathi ?? '');
   const [saving, setSaving] = useState(false);
 
   const canSave = name.trim().length > 0 && age !== null && gender !== null && !saving;
@@ -31,7 +34,7 @@ function SetupForm({ initial, onSave: save }: FormProps) {
   const onSave = async () => {
     if (!canSave || age === null || gender === null) return;
     setSaving(true);
-    await save({ name, age, gender });
+    await save({ name, age, gender, nameMarathi: nameMarathi.trim() });
     router.dismissTo('/home');
   };
 
@@ -65,6 +68,23 @@ function SetupForm({ initial, onSave: save }: FormProps) {
             style={styles.input}
             accessibilityLabel="मुलाचं नाव"
           />
+          {/* Stories where Aaji says the child's name need the name in Marathi letters. */}
+          {name.trim() && !cleanChildName(name.trim()) ? (
+            <>
+              <AppText muted>आजीने गोष्टीत नाव म्हणावं म्हणून मराठीत लिहा (उदा. केतू)</AppText>
+              <TextInput
+                value={nameMarathi}
+                onChangeText={setNameMarathi}
+                placeholder="मराठीत नाव"
+                placeholderTextColor={colors.textMuted}
+                maxLength={15}
+                autoCorrect={false}
+                returnKeyType="done"
+                style={styles.input}
+                accessibilityLabel="मराठीत नाव"
+              />
+            </>
+          ) : null}
         </View>
         <View style={styles.section}>
           <AppText variant="title">तू मुलगा आहेस की मुलगी?</AppText>

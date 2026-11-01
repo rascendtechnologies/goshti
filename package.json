@@ -53,7 +53,8 @@
     "add-retelling": "tsx scripts/library/add-retelling.ts",
     "art": "node scripts/art/build-manifest.mjs",
     "personal:check": "tsx scripts/library/personal-check.ts",
-    "personal:check-all": "tsx scripts/library/personal-check-all.ts"
+    "personal:check-all": "tsx scripts/library/personal-check-all.ts",
+    "personal:prerender": "tsx scripts/library/personal-prerender.ts"
   },
   "private": true
 }

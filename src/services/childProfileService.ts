@@ -1,4 +1,4 @@
-import { isChildAge, PROFILES } from '@engine/index';
+import { cleanChildName, isChildAge, PROFILES, type PersonalChild } from '@engine/index';
 
 import { createId } from '@/utils/id';
 import type { ChildAge, ChildGender, ChildProfile } from '@/types/models';
@@ -19,22 +19,37 @@ export class ChildProfileService {
     return this.storage.getChildProfile();
   }
 
-  async saveProfile(input: { name: string; age: ChildAge; gender?: ChildGender }): Promise<ChildProfile> {
+  async saveProfile(input: { name: string; age: ChildAge; gender?: ChildGender; nameMarathi?: string }): Promise<ChildProfile> {
     const name = input.name.trim().slice(0, MAX_CHILD_NAME_LENGTH);
     if (!name) throw new Error('Name is required.');
     if (!isChildAge(input.age)) throw new Error('Age must be between 2 and 9.');
     const existing = await this.storage.getChildProfile();
     const gender = input.gender === 'BOY' || input.gender === 'GIRL' ? input.gender : existing?.gender;
-    const profile: ChildProfile = { id: existing?.id ?? createId(), name, age: input.age, ...(gender ? { gender } : {}) };
+    // The Devanagari name: what was typed now, else the one kept for the same name; empty clears it.
+    const marathi = input.nameMarathi !== undefined ? cleanChildName(input.nameMarathi) : existing?.name === name ? cleanChildName(existing?.nameMarathi) : null;
+    const profile: ChildProfile = {
+      id: existing?.id ?? createId(),
+      name,
+      age: input.age,
+      ...(gender ? { gender } : {}),
+      ...(marathi && marathi !== cleanChildName(name) ? { nameMarathi: marathi } : {}),
+    };
     await this.storage.saveChildProfile(profile);
     // Stories prepared in advance star the child and are written for an age band — drop them if
     // the name, boy/girl or age band changed (a birthday inside the same band keeps them).
     if (
       existing &&
-      (existing.name !== profile.name || existing.gender !== profile.gender || bandOf(existing.age) !== bandOf(profile.age))
+      (existing.name !== profile.name || existing.nameMarathi !== profile.nameMarathi || existing.gender !== profile.gender || bandOf(existing.age) !== bandOf(profile.age))
     ) {
       await this.storage.savePreparedStories({});
     }
     return profile;
   }
+}
+
+/** The child as personal stories need them (name in Devanagari + boy/girl), or null if that is not known yet. */
+export function personalChildOf(profile: ChildProfile | null | undefined): PersonalChild | null {
+  if (!profile?.gender) return null;
+  const name = cleanChildName(profile.nameMarathi) ?? cleanChildName(profile.name);
+  return name ? { name, gender: profile.gender } : null;
 }

@@ -175,6 +175,7 @@ export async function handleTts(
     part?: unknown;
     name?: unknown;
     gender?: unknown;
+    hash?: unknown;
   };
   const voice = resolveAajiVoice(b.voice, env.TTS_VOICE || DEFAULT_TTS_VOICE);
 
@@ -204,6 +205,10 @@ export async function handleTts(
       return { status: 400, body: { status: 'INVALID_REQUEST', errors: [`part must be 0–${parts.length - 1}`] } };
     }
     const part = parts[index];
+    // The app and the server must agree on the words of this part (they may be on different versions).
+    if (typeof b.hash === 'string' && b.hash !== part.hash) {
+      return { status: 409, body: { status: 'INVALID_REQUEST', errors: ['this story has changed; update the app'] } };
+    }
     if (part.personal && !(name && gender)) {
       return { status: 400, body: { status: 'INVALID_REQUEST', errors: ['this part needs a name (in Devanagari) and gender BOY or GIRL'] } };
     }

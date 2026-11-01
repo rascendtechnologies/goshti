@@ -33,6 +33,8 @@ export interface ChildProfile {
   age: ChildAge;
   /** The child is the hero of their AI stories — Marathi grammar needs boy or girl. */
   gender?: ChildGender;
+  /** The name in Devanagari, when the name above is typed in English letters (personal stories need it). */
+  nameMarathi?: string;
 }
 
 export type PlanId = 'FREE' | 'PLUS';

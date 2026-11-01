@@ -1,0 +1,49 @@
+# Records the shared parts (sentences without a name) of every personal story, once, so children's
+# phones only download them. Safe to run again after adding a story.
+# Actions → "Pre-render personal story voices" → Run workflow.
+name: Pre-render personal story voices
+
+on:
+  workflow_dispatch:
+    inputs:
+      story:
+        description: Only this story id (leave empty for all)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: okcoskjdspwqnvcilbsf
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - name: Record the shared parts
+        env:
+          STORY: ${{ inputs.story }}
+        run: |
+          export SUPABASE_ACCESS_TOKEN=$(printf '%s' "$SUPABASE_ACCESS_TOKEN" | grep -oE 'sbp_[A-Za-z0-9_]{20,}' | head -n 1 || true)
+          supabase projects api-keys --project-ref "$PROJECT_REF" -o json > "$RUNNER_TEMP/keys.json"
+          anon=$(jq -r '.[] | select(.name == "anon") | .api_key' "$RUNNER_TEMP/keys.json" | head -n 1)
+          service=$(jq -r '.[] | select(.name == "service_role") | .api_key' "$RUNNER_TEMP/keys.json" | head -n 1)
+          rm -f "$RUNNER_TEMP/keys.json"
+          if [ -z "$anon" ] || [ "$anon" = "null" ] || [ -z "$service" ] || [ "$service" = "null" ]; then
+            echo "::error::Could not read the Supabase keys (check the SUPABASE_ACCESS_TOKEN secret)."; exit 1
+          fi
+          echo "::add-mask::$anon"; echo "::add-mask::$service"
+          export SUPABASE_ANON_KEY="$anon" SUPABASE_SERVICE_KEY="$service"
+          export SUPABASE_URL="https://$PROJECT_REF.supabase.co"
+          export STORY_API_URL="https://$PROJECT_REF.supabase.co/functions/v1/generate-story"
+          npx tsx scripts/library/personal-prerender.ts "$STORY"

@@ -3,9 +3,11 @@
  * made in PARTS. A part that has no name in it is the same for every child (recorded once and
  * shared); only the few parts that say the child's name or a boy/girl word are recorded per child.
  */
-import { libraryAudioScript, type LibraryStory } from '../library';
+import { libraryAudioScript, libraryToApproved, type LibraryStory } from '../library';
+import { ageToBand, isChildAge, type ChildAge } from '../profiles';
+import type { StoryCategory } from '../categories';
 import { buildTtsChunks, type TtsChunk } from '../tts';
-import type { AudioSegment } from '../types';
+import type { ApprovedStory, AudioSegment } from '../types';
 import { findPersonalStory, PERSONAL_STORIES, type PersonalStory } from './stories';
 import { cleanChildName, hasPlaceholder, renderTemplate, type ChildGender, type PersonalChild } from './template';
 
@@ -128,4 +130,46 @@ export function personalParts(story: PersonalStory, child: PersonalChild, age?: 
     });
   }
   return parts;
+}
+
+/** The story as the app stores it, with the child's name filled in. */
+export function personalToApproved(story: PersonalStory, child: PersonalChild, age: ChildAge): ApprovedStory {
+  return libraryToApproved(asLibraryStory(story, child), age);
+}
+
+/** Same story, different child → different id (so a second child still gets to hear it). */
+export function personalStoryId(story: PersonalStory, child: PersonalChild): string {
+  return `per-${story.id}-${fingerprint(`${child.name}|${child.gender}`).slice(0, 6)}`;
+}
+
+/** The next personal story this child has not heard, for their age and the chosen category. */
+export function pickPersonalStory(input: {
+  age: number;
+  category?: StoryCategory;
+  child: PersonalChild;
+  heardIds: string[];
+}): PersonalStory | null {
+  if (!isChildAge(input.age)) return null;
+  const band = ageToBand(input.age);
+  const heard = new Set(input.heardIds);
+  return (
+    PERSONAL_STORIES.find(
+      (s) => s.ageBand === band && (!input.category || s.category === input.category) && !heard.has(personalStoryId(s, input.child)),
+    ) ?? null
+  );
+}
+
+/** Which recorded set a child hears: the younger one has longer pauses between sentences. */
+export const personalVariant = (age: number) => (age <= 5 ? 'young' : 'older');
+
+/** The voice "ticket" for a personal story: everything the phone needs to fetch its parts. */
+export function personalToken(story: PersonalStory, child: PersonalChild, age: number): string {
+  return ['per', story.id, age, child.gender, child.name].join(':');
+}
+
+export function parsePersonalToken(token: string): { storyId: string; age: number; child: PersonalChild } | null {
+  const [tag, storyId, age, gender, ...name] = token.split(':');
+  const cleaned = cleanChildName(name.join(':'));
+  if (tag !== 'per' || !storyId || !cleaned || (gender !== 'BOY' && gender !== 'GIRL') || !Number.isInteger(Number(age))) return null;
+  return { storyId, age: Number(age), child: { name: cleaned, gender } };
 }

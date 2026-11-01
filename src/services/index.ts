@@ -103,6 +103,7 @@ export const storyService: StoryService = new DefaultStoryService({
   seedGenerator: new LocalMockGenerator(),
   voice: voiceService ?? undefined,
   libraryVoiceTicket: voiceClient ? (id, age) => voiceClient.libraryTicket(id, age) : undefined,
+  personalVoiceTicket: voiceClient ? (id, child, age) => voiceClient.personalTicket(id, child, age) : undefined,
   tts: ttsService,
   storage: storageService,
   subscription: subscriptionService,

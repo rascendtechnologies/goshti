@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CATEGORIES, greatPeopleFor, type ChildAge, type StoryCategory } from '@engine/index';
-import { BRAND } from '@/brand';
 import { AppText, BigButton, CategoryTile, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
 import { useStoryWarmUp } from '@/hooks/useStoryWarmUp';
@@ -92,9 +91,6 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.heading}>
-        <AppText variant="caption" color={colors.primary}>
-          {BRAND.warmName}
-        </AppText>
         {profile ? (
           <AppText variant="label" muted>
             {aajiGreeting(profile.name)}

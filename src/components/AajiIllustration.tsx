@@ -3,7 +3,10 @@ import { StyleSheet, View } from 'react-native';
 import { colors, radius } from '@/theme';
 import type { SceneId } from '@/utils/scene';
 
+import type { ArtSlot } from '@/art';
+
 import { AajiScene } from './AajiScene';
+import { ArtImage } from './ArtImage';
 
 interface Props {
   /** "scene" = Aaji with two children listening (Welcome). "portrait" = Aaji alone. */
@@ -18,7 +21,10 @@ interface Props {
 export function AajiIllustration({ variant = 'portrait', size = 220, scene = 'room' }: Props) {
   return (
     <View style={[styles.frame, { width: size * 1.3, maxWidth: '100%' }]}>
-      <AajiScene scene={scene} withChildren={variant === 'scene'} />
+      <ArtImage
+        slot={(variant === 'scene' ? 'welcome' : `scene-${scene}`) as ArtSlot}
+        fallback={<AajiScene scene={scene} withChildren={variant === 'scene'} />}
+      />
     </View>
   );
 }

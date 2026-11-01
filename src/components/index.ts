@@ -1,4 +1,5 @@
 export { AajiIllustration } from './AajiIllustration';
+export { ArtImage } from './ArtImage';
 export { AgeSelector } from './AgeSelector';
 export { AppText } from './AppText';
 export { BackButton } from './BackButton';

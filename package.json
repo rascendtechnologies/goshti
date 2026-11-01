@@ -50,7 +50,8 @@
     "voice-test": "tsx scripts/voice-test.ts",
     "eas:env": "node scripts/eas-env.mjs",
     "build:android-test": "npx eas-cli build --platform android --profile preview",
-    "add-retelling": "tsx scripts/library/add-retelling.ts"
+    "add-retelling": "tsx scripts/library/add-retelling.ts",
+    "art": "node scripts/art/build-manifest.mjs"
   },
   "private": true
 }

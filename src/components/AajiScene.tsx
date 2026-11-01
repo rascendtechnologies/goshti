@@ -7,9 +7,10 @@
  * A designer can later replace any scene without touching the screens.
  */
 import { useEffect, useId, useMemo, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, Line, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { SCENE_LABEL, type SceneId } from '@/utils/scene';
 
 const W = 390;
@@ -312,22 +313,6 @@ function Courtyard({ p }: { p: string }) {
 // ---------------------------------------------------------------------------
 // Gentle twinkle (night only)
 // ---------------------------------------------------------------------------
-
-function useReduceMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    let active = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((r) => active && setReduce(r))
-      .catch(() => {});
-    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', setReduce);
-    return () => {
-      active = false;
-      sub?.remove();
-    };
-  }, []);
-  return reduce;
-}
 
 function Twinkles() {
   const reduce = useReduceMotion();

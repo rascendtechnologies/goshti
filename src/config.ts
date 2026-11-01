@@ -37,6 +37,9 @@ const revenueCatKey =
   (Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY)?.trim() || '';
 
 export const config = {
+  /** Supabase project (public values) — the story catalogue is read from here. */
+  supabaseUrl,
+  supabaseAnonKey,
   /** Public RevenueCat key for this platform; empty = purchases off (Expo Go, test builds). */
   revenueCatKey,
   /** Where the parent reads the terms and privacy policy (shown beside the purchase buttons). */

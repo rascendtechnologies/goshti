@@ -8,12 +8,13 @@ import { ageToBand, isChildAge, type ChildAge } from '../profiles';
 import type { StoryCategory } from '../categories';
 import { buildTtsChunks, type TtsChunk } from '../tts';
 import type { ApprovedStory, AudioSegment } from '../types';
-import { findPersonalStory, PERSONAL_STORIES, type PersonalStory } from './stories';
+import { allPersonalStories, findPersonalStory, PERSONAL_STORIES, setCatalogStories, type PersonalStory } from './stories';
 import { cleanChildName, hasPlaceholder, renderTemplate, type ChildGender, type PersonalChild } from './template';
 
 export { checkPersonalTemplate, LIMITS } from './check';
 export { personalPrompt, PERSONAL_STORY_PROMPT } from './prompt';
-export { cleanChildName, findPersonalStory, hasPlaceholder, PERSONAL_STORIES, renderTemplate };
+export { allPersonalStories, cleanChildName, findPersonalStory, hasPlaceholder, PERSONAL_STORIES, renderTemplate, setCatalogStories };
+export { catalogRowToStory, parseCatalogRows, type CatalogRow } from './catalog';
 export type { ChildGender, PersonalChild, PersonalStory };
 
 /** Two stand-in children, used only to find out which sentences change with the child. */
@@ -153,7 +154,7 @@ export function pickPersonalStory(input: {
   const band = ageToBand(input.age);
   const heard = new Set(input.heardIds);
   return (
-    PERSONAL_STORIES.find(
+    allPersonalStories().find(
       (s) => s.ageBand === band && (!input.category || s.category === input.category) && !heard.has(personalStoryId(s, input.child)),
     ) ?? null
   );

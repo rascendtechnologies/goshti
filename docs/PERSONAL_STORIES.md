@@ -21,6 +21,8 @@ length and listening checks.
 **Try it.** GitHub → Actions → *Personal story voice (test)* → Run workflow (name in Devanagari,
 gender, age). The run summary has a link to listen and shows which parts were reused.
 
+**See also** docs/CATALOG.md (stories can also be added from Supabase without an app update).
+
 **Not done yet (app side).** The app does not play personal stories yet. It would fetch the plan,
 download the shared parts, ask the backend for the personal parts once per child, and keep them on
 the phone. Names typed in English letters need turning into Devanagari first.

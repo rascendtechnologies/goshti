@@ -80,6 +80,8 @@ interface Deps {
   /** Gets a voice ticket for a library story (backend). Optional. */
   libraryVoiceTicket?: (libraryId: string, age: number) => Promise<VoiceTicket | null>;
   /** Voice ticket for a personal story (name filled in per child). Optional. */
+  /** Resolves once the saved story catalogue is in use (fast; never waits for the network). */
+  catalogReady?: () => Promise<void>;
   personalVoiceTicket?: (storyId: string, child: PersonalChild, age: number) => VoiceTicket | null;
   /** Prepares RANDOM stories ahead of time. Optional. */
   prefetcher?: RandomStoryPrefetcher;
@@ -161,6 +163,7 @@ export class DefaultStoryService implements StoryService {
 
   /** The next personal story for this child and category, ready to play; null if there is none. */
   private async personalStory(request: StoryRequest): Promise<GoshtiStory | null> {
+    await this.deps.catalogReady?.().catch(() => {});
     const [profile, stories] = await Promise.all([this.deps.storage.getChildProfile(), this.deps.storage.getStories()]);
     const child = personalChildOf(profile);
     if (!child) return null;

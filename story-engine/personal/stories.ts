@@ -265,6 +265,20 @@ const BASE_STORIES: PersonalStory[] = [
 
 export const PERSONAL_STORIES: PersonalStory[] = [...BASE_STORIES, ...PERSONAL_STORIES_6_7, ...PERSONAL_STORIES_8_9];
 
+/** Stories from the Supabase catalogue (already validated). They win over the built-in stories with the same id. */
+let catalogStories: PersonalStory[] = [];
+
+export function setCatalogStories(stories: PersonalStory[]): void {
+  catalogStories = stories;
+}
+
+/** Catalogue stories first, then the built-in stories the catalogue does not replace. */
+export function allPersonalStories(): PersonalStory[] {
+  if (!catalogStories.length) return PERSONAL_STORIES;
+  const taken = new Set(catalogStories.map((s) => s.id));
+  return [...catalogStories, ...PERSONAL_STORIES.filter((s) => !taken.has(s.id))];
+}
+
 export function findPersonalStory(id: string): PersonalStory | undefined {
-  return PERSONAL_STORIES.find((s) => s.id === id);
+  return allPersonalStories().find((s) => s.id === id);
 }

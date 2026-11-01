@@ -25,11 +25,12 @@ import type { TtsChunk } from '../story-engine/tts';
 import { AUDITION_CHUNK, AUDITION_VOICES, buildTtsChunks, DEFAULT_AAJI_STYLE } from '../story-engine/tts';
 import { resolveAajiVoice, SynthesizerTTSProvider, type TTSProvider } from '../story-engine/ttsProvider';
 import { findLibraryStory, libraryAudioScript } from '../story-engine/library';
+import { ensureCatalog, type CatalogEnv } from './catalog';
 import { cleanChildName, findPersonalStory, personalParts, type PersonalChild } from '../story-engine/personal';
 import type { AudioScript } from '../story-engine/types';
 import { openJson, sealJson } from './continuation';
 
-export interface TtsEnv extends GoogleEnv {
+export interface TtsEnv extends GoogleEnv, CatalogEnv {
   TTS_MODEL?: string;
   TTS_FALLBACK_MODEL?: string;
   /** Aaji's prebuilt voice (default Aoede). Must be a prebuilt voice name. */
@@ -190,6 +191,7 @@ export async function handleTts(
   if (b.action === 'personal-plan' || b.action === 'personal-render') {
     // Personal stories are known to the server too: the words always come from the stored story,
     // and the only thing a request adds is a plain Devanagari name and boy/girl.
+    await ensureCatalog(env, (line) => log?.(line));
     const story = typeof b.id === 'string' ? findPersonalStory(b.id) : undefined;
     if (!story) return { status: 404, body: { status: 'INVALID_REQUEST', errors: ['unknown personal story'] } };
     const age = Number.isFinite(Number(b.age)) ? Number(b.age) : undefined;

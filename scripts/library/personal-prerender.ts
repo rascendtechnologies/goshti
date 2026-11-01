@@ -10,7 +10,7 @@
  */
 import { appendFileSync } from 'node:fs';
 
-import { PERSONAL_STORIES, personalParts, personalVariant } from '../../story-engine/personal';
+import { allPersonalStories, parseCatalogRows, personalParts, personalVariant, setCatalogStories } from '../../story-engine/personal';
 
 const api = process.env.STORY_API_URL ?? '';
 const anon = process.env.SUPABASE_ANON_KEY ?? '';
@@ -21,6 +21,16 @@ if (!api || !anon || !base || !service) {
   process.exit(1);
 }
 const only = process.argv[2];
+
+// Catalogue stories (published rows in Supabase) are recorded too, ahead of the built-in ones.
+try {
+  const res = await fetch(`${base}/rest/v1/personal_stories?published=eq.true&select=*`, { headers: { apikey: service, Authorization: `Bearer ${service}` } });
+  if (res.ok) {
+    setCatalogStories(parseCatalogRows(await res.json(), (id, errors) => console.warn(`catalogue row "${id}" ignored: ${errors.join('; ')}`)));
+  } else console.warn(`catalogue not read (HTTP ${res.status}) — built-in stories only`);
+} catch (e) {
+  console.warn(`catalogue not read (${(e as Error).message}) — built-in stories only`);
+}
 const CONCURRENCY = 6;
 const REFERENCE = { name: 'सई', gender: 'GIRL' as const };
 
@@ -58,7 +68,7 @@ async function upload(path: string, bytes: Uint8Array) {
 
 async function main() {
   const jobs: { id: string; age: number; part: number; hash: string; path: string }[] = [];
-  for (const story of PERSONAL_STORIES.filter((s) => !only || s.id === only)) {
+  for (const story of allPersonalStories().filter((s) => !only || s.id === only)) {
     // One representative age per recorded set: 4 (younger, longer pauses) and 7 (older).
     for (const age of [4, 7]) {
       for (const p of personalParts(story, REFERENCE, age)) {

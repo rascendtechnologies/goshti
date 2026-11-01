@@ -20,6 +20,9 @@ import { LocalFeedbackService, type FeedbackService } from './feedbackService';
 import { bundledSounds } from './soundAssets';
 import { ExpoSoundPlayerFactory } from './soundPlayer';
 import { SpeechAudioService } from './speechAudioService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { CatalogService } from './catalogService';
 import { AsyncStorageService, type StorageService } from './storageService';
 import { BackendStoryGenerator, LocalMockGenerator, type StoryGenerator } from './storyGenerator';
 import { RandomStoryPrefetcher } from './storyPrefetcher';
@@ -45,6 +48,17 @@ export const subscriptionService: SubscriptionService = new PurchasesSubscriptio
   new RevenueCatBilling({ apiKey: config.revenueCatKey, appUserId: getDeviceId, load: loadRevenueCat }),
 );
 export const ttsService: TtsService = new MockTtsService();
+
+/** Stories from Supabase (new stories without an app update); the stories built into the app are the fallback. */
+export const catalogService = new CatalogService({
+  supabaseUrl: config.supabaseUrl,
+  anonKey: config.supabaseAnonKey,
+  cache: {
+    get: () => AsyncStorage.getItem('goshti.catalog.v1'),
+    set: (value) => AsyncStorage.setItem('goshti.catalog.v1', value),
+  },
+});
+catalogService.start();
 
 const voiceFiles = new ExpoVoiceFileStore();
 /** Parent "delete everything on this phone". */
@@ -103,6 +117,7 @@ export const storyService: StoryService = new DefaultStoryService({
   seedGenerator: new LocalMockGenerator(),
   voice: voiceService ?? undefined,
   libraryVoiceTicket: voiceClient ? (id, age) => voiceClient.libraryTicket(id, age) : undefined,
+  catalogReady: () => catalogService.ready(),
   personalVoiceTicket: voiceClient ? (id, child, age) => voiceClient.personalTicket(id, child, age) : undefined,
   tts: ttsService,
   storage: storageService,

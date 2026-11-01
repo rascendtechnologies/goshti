@@ -5,6 +5,7 @@ import { getArt, type ArtSlot } from '@/art';
 import type { CategoryInfo } from '@engine/index';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { colors, radius, shadow, spacing, touch } from '@/theme';
+import { CATEGORY_TINT } from '@/utils/categoryTint';
 
 import { AppText } from './AppText';
 
@@ -13,18 +14,6 @@ interface Props {
   selected: boolean;
   onPress: () => void;
 }
-
-/** A soft wash behind each category's picture, so the grid feels like a shelf of little cards. */
-const TINT: Record<string, string> = {
-  animals: '#F8E4C4',
-  adventure: '#E6EBCB',
-  magic: '#EBDDF2',
-  funny: '#FBE0B8',
-  mystery: '#DCE6EE',
-  bedtime: '#DDE0F2',
-  festivals: '#F9D9C2',
-  space: '#D8DEF0',
-};
 
 export function CategoryTile({ category, selected, onPress }: Props) {
   const art = getArt(`category-${category.id}` as ArtSlot);
@@ -46,7 +35,7 @@ export function CategoryTile({ category, selected, onPress }: Props) {
         onPressOut={() => press(1)}
         style={[styles.tile, selected && styles.selected]}
       >
-        <View style={[styles.badge, { backgroundColor: TINT[category.id] ?? colors.surfaceWarm }]}>
+        <View style={[styles.badge, { backgroundColor: CATEGORY_TINT[category.id] ?? colors.surfaceWarm }]}>
           {art ? (
             <Image source={art} style={styles.art} resizeMode="contain" accessibilityIgnoresInvertColors />
           ) : (

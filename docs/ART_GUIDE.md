@@ -19,6 +19,7 @@ they appear at once.
 | `scene-room` | 1300 × 1000 | Aaji in her room by the lamp (mystery / default) |
 | `scene-night` | 1300 × 1000 | Aaji under the big tree on a starry night, lantern glowing (bedtime, space, magic) |
 | `scene-courtyard` | 1300 × 1000 | Aaji in the courtyard near the tulsi at dusk (animals, adventure, funny, festivals) |
+| `peti` | 560 × 400 | Aaji's wooden trunk (peti), lid open, warm glow; transparent background |
 | `category-animals` | 600 × 600 | A friendly elephant |
 | `category-adventure` | 600 × 600 | A child with a compass on a hill path |
 | `category-magic` | 600 × 600 | A glowing lamp or sparkling flower |
@@ -33,7 +34,7 @@ centred with some margin. Scene pictures fill a rounded frame (cropped from the 
 Aaji and the children away from the edges.
 
 ## One look for everything (important)
-All twelve must look like the same book. Decide once, then reuse the same description.
+All thirteen must look like the same book. Decide once, then reuse the same description.
 
 Style brief to give an illustrator or an image tool:
 

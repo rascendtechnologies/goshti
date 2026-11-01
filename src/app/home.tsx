@@ -58,12 +58,12 @@ export default function HomeScreen() {
       <View style={styles.topRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="माझ्या गोष्टी"
+          accessibilityLabel="आजीची पेटी"
           onPress={() => router.push('/stories')}
           style={styles.topLink}
         >
           <AppText variant="label" color={colors.primary}>
-            📚 माझ्या गोष्टी
+            🧰 आजीची पेटी
           </AppText>
         </Pressable>
         {/* Parent mode: press and hold, so a quick tap from a child doesn't open it (a tap shows how). */}

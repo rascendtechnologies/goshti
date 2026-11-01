@@ -12,6 +12,8 @@ export const ART_SLOTS = {
   'scene-room': { size: '1300x1000', what: "Aaji in her room by the lamp" },
   'scene-night': { size: '1300x1000', what: 'Aaji under the big tree on a starry night, lantern glowing' },
   'scene-courtyard': { size: '1300x1000', what: 'Aaji in the courtyard near the tulsi at dusk' },
+  /** Aaji's peti (the box of kept stories), open with a glow. 560x400 (7:5), transparent background. */
+  peti: { size: '560x400', what: "Aaji's wooden trunk, lid open, a warm glow" },
   /** One card picture per category (Home). 600x600, square. */
   'category-animals': { size: '600x600', what: 'a friendly elephant' },
   'category-adventure': { size: '600x600', what: 'a child with a compass at a hill path' },

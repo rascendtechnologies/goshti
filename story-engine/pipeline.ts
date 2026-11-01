@@ -17,6 +17,7 @@ import { resolveProfile, type ChildAge } from './profiles';
 import { ProviderError, type ProviderErrorCode, type StoryAIProvider } from './provider';
 import { inventedNames, type RetellingSource } from './retellings';
 import { heroChecks, heroNameInStory, isHeroRequest } from './hero';
+import { ideaChecks } from './ideaFit';
 import { validateStoryRequest } from './request';
 import { StoryPlanSchema, type StoryRequest } from './schemas';
 import { MESSAGES, type PipelineResult, type StageName, type StoryTrace } from './types';
@@ -257,6 +258,11 @@ export async function advancePipeline(
           });
           // (The offline mock's fixed templates can't star the child, so it isn't held to this.)
           if (hero && provider.name !== 'mock') local.push(...heroChecks(request, plan, story.storyText));
+          // The first draft must keep the child's idea; the rewrite gets that feedback and is then trusted
+          // (a typo in the idea must never fail a story outright).
+          if (request.mode === 'CUSTOM' && provider.name !== 'mock' && trace.attemptCount === 1) {
+            local.push(...ideaChecks(request.userIdea, story.storyText));
+          }
           const invented = retell ? inventedNames(retell, planNames, story.storyText) : [];
           if (invented.length) {
             local.push(`invented named character(s) in a story about a real person — keep them unnamed (एक मित्र, वर्गातली मुलं): ${invented.join(', ')}`);

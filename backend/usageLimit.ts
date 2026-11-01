@@ -40,8 +40,8 @@ interface Rule {
 const RULES: Record<UsageKind, Rule[]> = {
   // a new story (the start of a story request; continuation steps are free)
   story: [
-    { scope: 'device', window: 'day', env: 'USAGE_STORY_DEVICE_DAY', limit: 10 },
-    { scope: 'device', window: 'month', env: 'USAGE_STORY_DEVICE_MONTH', limit: 40 },
+    { scope: 'device', window: 'day', env: 'USAGE_STORY_DEVICE_DAY', limit: 25 },
+    { scope: 'device', window: 'month', env: 'USAGE_STORY_DEVICE_MONTH', limit: 150 },
     { scope: 'ip', window: 'day', env: 'USAGE_STORY_IP_DAY', limit: 80 },
     { scope: 'global', window: 'day', env: 'USAGE_STORY_GLOBAL_DAY', limit: 1500 },
   ],

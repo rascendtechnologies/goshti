@@ -71,7 +71,8 @@ describe('backend handler', () => {
       }),
     );
     const env = { GEMINI_API_KEY: 'k', STORY_SLICE_MS: '0' };
-    let r = await handleGenerateStory({ request: { age: 6, category: 'adventure', mode: 'CUSTOM', userIdea: 'एक मांजर क्रिकेट खेळतं' } }, env, quiet);
+    // (the idea shares its words with the stand-in story, as a story that kept the idea would)
+    let r = await handleGenerateStory({ request: { age: 6, category: 'adventure', mode: 'CUSTOM', userIdea: 'टिंकू घड्याळ' } }, env, quiet);
     const phases: string[] = [];
     while (r.status === 202) {
       phases.push(String(r.body.phase));

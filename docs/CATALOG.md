@@ -21,11 +21,11 @@ The backend reloads it every 5 minutes. A new story therefore reaches phones the
    `SUPABASE_URL=… SUPABASE_SERVICE_KEY=… npm run catalog:push -- --file my-stories.json`
    (rows are saved as drafts; the script refuses a row that fails the checks).
 3. **Check it:** `npm run catalog:check` lists every row, says which are refused and why, and shows warnings.
-4. **Record the shared voices:** GitHub → Actions → "Pre-render personal story voices" (story id, or empty for all).
-   It records the sentences without a name once, for everyone. Only published rows are recorded, so you may
-   publish first and run this immediately — or run it first with the story still unpublished by publishing,
-   running it, and unpublishing if needed. Without it the first listeners wait while parts are made.
-5. **Publish:** set `published` to `true` in the dashboard.
+4. **Publish, then record the shared voices straight away:** set `published` to `true` in the dashboard, then run
+   GitHub → Actions → "Pre-render personal story voices" (the story id, or empty for all). It records the
+   sentences without a name once, for everyone, and only reads published rows. Phones pick the story up within
+   minutes of opening the app, so run it right after publishing; until it finishes, the first listeners wait while
+   the shared parts are made.
 
 ## Columns
 

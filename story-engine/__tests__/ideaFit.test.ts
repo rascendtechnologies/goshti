@@ -22,3 +22,22 @@ describe('idea fit', () => {
     expect(ideaChecks(null, 'काहीही')).toEqual([]);
   });
 });
+
+describe('plan keeps the idea', () => {
+  it('asks for a second plan when the first drops the child’s idea', async () => {
+    const { generateStory } = await import('../pipeline');
+    const { fakeProvider, storyOfWords, samplePlan } = await import('./fixtures');
+    const story = storyOfWords(520);
+    const { provider } = fakeProvider({ story });
+    const feedbacks: (string[] | undefined)[] = [];
+    const original = provider.createPlan.bind(provider);
+    provider.createPlan = async (input) => {
+      feedbacks.push(input.feedback);
+      return input.feedback ? { ...samplePlan, workingTitle: 'हत्ती आणि मुंगी' } : original(input);
+    };
+    await generateStory({ age: 6, category: 'adventure', mode: 'CUSTOM', userIdea: 'हत्ती आणि मुंगीची दोस्ती' }, provider);
+    expect(feedbacks).toHaveLength(2);
+    expect(feedbacks[0]).toBeUndefined();
+    expect(feedbacks[1]?.[0]).toContain('idea');
+  });
+});

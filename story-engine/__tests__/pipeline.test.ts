@@ -10,7 +10,7 @@ import { MESSAGES } from '../types';
 import { evaluation, fakeProvider, storyOfWords } from './fixtures';
 
 const random = { age: 6, category: 'adventure', mode: 'RANDOM' } as const;
-const custom = { age: 6, category: 'adventure', mode: 'CUSTOM', userIdea: 'एका हत्तीला चंद्रावर जायचं आहे' } as const;
+const custom = { age: 6, category: 'adventure', mode: 'CUSTOM', userIdea: 'टिंकूची उलटी घड्याळं' } as const;
 
 describe('story pipeline', () => {
   it('approves a story that passes the critic first time', async () => {

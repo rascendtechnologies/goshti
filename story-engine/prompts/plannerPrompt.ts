@@ -101,6 +101,6 @@ ${formatProfile(input.profile)}
 ${input.request.mode === 'RANDOM' ? 'Suggested ingredients for this RANDOM story' : 'Optional suggestions (the child’s idea comes first)'}:
 ${ingredients || '- none'}
 ${avoid}
-
+${input.feedback?.length ? `\nYour previous plan was rejected — fix this:\n${input.feedback.map((f) => `- ${f}`).join('\n')}\nNamed characters from the child's idea must appear in plan.characters and in the setting/goal.\n` : ''}
 Create the StoryPlan now.`;
 }

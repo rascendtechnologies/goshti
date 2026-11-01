@@ -10,6 +10,8 @@ export interface PlanInput {
   ingredients: Partial<VarietyIngredients>;
   /** Set when retelling a traditional story (library generation only). */
   retell?: RetellingSource;
+  /** Set when a first plan dropped the child's idea: what to fix. */
+  feedback?: string[];
 }
 
 export interface WriteInput {

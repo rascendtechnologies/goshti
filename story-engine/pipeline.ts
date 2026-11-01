@@ -224,7 +224,14 @@ export async function advancePipeline(
         }
 
         case 'PLAN': {
-          const raw = await timed(() => provider.createPlan({ request, profile, ingredients: state.ingredients, retell }));
+          let raw = await timed(() => provider.createPlan({ request, profile, ingredients: state.ingredients, retell }));
+          // The plan must keep the child's idea (a hero child plus a theme can crowd it out): ask once more.
+          if (request.mode === 'CUSTOM' && provider.name !== 'mock') {
+            const dropped = ideaChecks(request.userIdea, JSON.stringify(raw));
+            if (dropped.length) {
+              raw = await timed(() => provider.createPlan({ request, profile, ingredients: state.ingredients, retell, feedback: dropped }));
+            }
+          }
           // The request — not the model — is the source of truth for these fields.
           trace.plan = StoryPlanSchema.parse({ ...raw, age: request.age, developmentalProfile: profile.id, category: request.category });
           state.phase = 'WRITE';
@@ -258,9 +265,9 @@ export async function advancePipeline(
           });
           // (The offline mock's fixed templates can't star the child, so it isn't held to this.)
           if (hero && provider.name !== 'mock') local.push(...heroChecks(request, plan, story.storyText));
-          // The first draft must keep the child's idea; the rewrite gets that feedback and is then trusted
+          // The first drafts must keep the child's idea; the last rewrite is then trusted
           // (a typo in the idea must never fail a story outright).
-          if (request.mode === 'CUSTOM' && provider.name !== 'mock' && trace.attemptCount === 1) {
+          if (request.mode === 'CUSTOM' && provider.name !== 'mock' && trace.attemptCount < maxAttempts) {
             local.push(...ideaChecks(request.userIdea, story.storyText));
           }
           const invented = retell ? inventedNames(retell, planNames, story.storyText) : [];

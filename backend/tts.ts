@@ -7,6 +7,8 @@
  *                                                     what the listening check heard (for testers)
  *   { action: "tts-render", audioToken, chunk }    → one chunk of an APPROVED story
  *   { action: "library-voice", id, age }           → audio token for a built-in library story
+ *   { action: "personal-plan", id, age }           → the parts of a personal story (which are shared)
+ *   { action: "personal-render", id, age, part, name?, gender? } → one part of a personal story
  *
  * tts-render only accepts an audioToken that this backend issued when it approved a story,
  * so Aaji can never be made to say arbitrary text.
@@ -23,6 +25,7 @@ import type { TtsChunk } from '../story-engine/tts';
 import { AUDITION_CHUNK, AUDITION_VOICES, buildTtsChunks, DEFAULT_AAJI_STYLE } from '../story-engine/tts';
 import { resolveAajiVoice, SynthesizerTTSProvider, type TTSProvider } from '../story-engine/ttsProvider';
 import { findLibraryStory, libraryAudioScript } from '../story-engine/library';
+import { cleanChildName, findPersonalStory, personalParts, type PersonalChild } from '../story-engine/personal';
 import type { AudioScript } from '../story-engine/types';
 import { openJson, sealJson } from './continuation';
 
@@ -144,7 +147,15 @@ async function voiceTest(b: { model?: unknown; sample?: unknown }, voice: string
 
 export function isTtsAction(body: unknown): boolean {
   const a = (body as { action?: unknown } | null)?.action;
-  return a === 'tts-voices' || a === 'tts-audition' || a === 'tts-voice-test' || a === 'tts-render' || a === 'library-voice';
+  return (
+    a === 'tts-voices' ||
+    a === 'tts-audition' ||
+    a === 'tts-voice-test' ||
+    a === 'tts-render' ||
+    a === 'library-voice' ||
+    a === 'personal-plan' ||
+    a === 'personal-render'
+  );
 }
 
 export async function handleTts(
@@ -161,6 +172,9 @@ export async function handleTts(
     age?: unknown;
     model?: unknown;
     sample?: unknown;
+    part?: unknown;
+    name?: unknown;
+    gender?: unknown;
   };
   const voice = resolveAajiVoice(b.voice, env.TTS_VOICE || DEFAULT_TTS_VOICE);
 
@@ -170,6 +184,54 @@ export async function handleTts(
     if (!story) return { status: 404, body: { status: 'INVALID_REQUEST', errors: ['unknown library story'] } };
     const age = Number(b.age);
     return { status: 200, body: await issueAudioToken(story.title, libraryAudioScript(story, Number.isFinite(age) ? age : undefined), env, Number.isFinite(age) ? age : undefined) };
+  }
+
+  if (b.action === 'personal-plan' || b.action === 'personal-render') {
+    // Personal stories are known to the server too: the words always come from the stored story,
+    // and the only thing a request adds is a plain Devanagari name and boy/girl.
+    const story = typeof b.id === 'string' ? findPersonalStory(b.id) : undefined;
+    if (!story) return { status: 404, body: { status: 'INVALID_REQUEST', errors: ['unknown personal story'] } };
+    const age = Number.isFinite(Number(b.age)) ? Number(b.age) : undefined;
+    const name = cleanChildName(b.name);
+    const gender = b.gender === 'GIRL' || b.gender === 'BOY' ? b.gender : null;
+    const child: PersonalChild = name && gender ? { name, gender } : { name: 'सई', gender: 'GIRL' };
+    const parts = personalParts(story, child, age, env.TTS_STYLE || DEFAULT_AAJI_STYLE);
+    if (b.action === 'personal-plan') {
+      return { status: 200, body: { id: story.id, parts: parts.map((p) => ({ index: p.index, personal: p.personal, hash: p.hash })) } };
+    }
+    const index = Number(b.part);
+    if (!Number.isInteger(index) || index < 0 || index >= parts.length) {
+      return { status: 400, body: { status: 'INVALID_REQUEST', errors: [`part must be 0–${parts.length - 1}`] } };
+    }
+    const part = parts[index];
+    if (part.personal && !(name && gender)) {
+      return { status: 400, body: { status: 'INVALID_REQUEST', errors: ['this part needs a name (in Devanagari) and gender BOY or GIRL'] } };
+    }
+    if (!hasGoogleAccess(env)) {
+      return { status: 503, body: { status: 'FAILED', reason: 'text-to-speech is not configured (set up Vertex AI)' } };
+    }
+    try {
+      const t0 = Date.now();
+      const audio = await createTtsProvider(env, log).synthesizeScene(part.chunk, voice);
+      return {
+        status: 200,
+        body: {
+          part: index,
+          totalParts: parts.length,
+          personal: part.personal,
+          hash: part.hash,
+          voice,
+          ...audio,
+          pauseAfterMs: part.chunk.pauseAfterMs,
+          cues: part.chunk.cues,
+          cueAt: part.chunk.cueAt,
+          ms: Date.now() - t0,
+        },
+      };
+    } catch (e) {
+      const reason = e instanceof ProviderError ? `${e.code}: ${e.message}` : (e as Error).message;
+      return { status: 503, body: { status: 'FAILED', reason } };
+    }
   }
 
   if (b.action === 'tts-voices') {

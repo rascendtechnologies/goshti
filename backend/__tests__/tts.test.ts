@@ -12,6 +12,44 @@ beforeEach(() => {
 /** A tiny WAV whose header says 100 Hz — about 40 s, a believable length for a story part. */
 const believableWav = () => btoa(String.fromCharCode(...pcmToWav(new Uint8Array(8000), 100)));
 
+describe('personal story voice', () => {
+  const env = { GEMINI_API_KEY: 'k', GEMINI_MODEL: 'x', TTS_CHECK: 'off' };
+
+  it('lists the parts and which of them are shared, with no key needed', async () => {
+    const r = await handleGenerateStory({ action: 'personal-plan', id: 'kajava-ani-hero', age: 4 }, {}, quiet);
+    expect(r.status).toBe(200);
+    const parts = r.body.parts as { personal: boolean; hash: string }[];
+    expect(parts.length).toBeGreaterThan(5);
+    expect(parts.some((p) => p.personal)).toBe(true);
+    expect(parts.some((p) => !p.personal)).toBe(true);
+  });
+
+  it('knows only its own stories, and only plain Devanagari names', async () => {
+    expect((await handleGenerateStory({ action: 'personal-plan', id: 'say-anything' }, {}, quiet)).status).toBe(404);
+    const personalIndex = ((await handleGenerateStory({ action: 'personal-plan', id: 'kajava-ani-hero', age: 4 }, {}, quiet)).body.parts as { personal: boolean }[]).findIndex((p) => p.personal);
+    for (const name of ['Ketu', 'केतू. आणि पुढचं वाक्य', '', undefined]) {
+      const r = await handleGenerateStory({ action: 'personal-render', id: 'kajava-ani-hero', age: 4, part: personalIndex, name, gender: 'BOY' }, env, quiet);
+      expect(r.status).toBe(400);
+    }
+    const noGender = await handleGenerateStory({ action: 'personal-render', id: 'kajava-ani-hero', age: 4, part: personalIndex, name: 'केतू' }, env, quiet);
+    expect(noGender.status).toBe(400);
+  });
+
+  it('renders a shared part without a name and a personal part with one', async () => {
+    // A few seconds of audio — believable for a single short line (the length check still applies).
+    const wav = btoa(String.fromCharCode(...pcmToWav(new Uint8Array(24000), 3000)));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ steps: [{ content: [{ type: 'audio', data: wav, mime_type: 'audio/wav' }] }] }))));
+    const plan = (await handleGenerateStory({ action: 'personal-plan', id: 'kajava-ani-hero', age: 4 }, {}, quiet)).body.parts as { personal: boolean }[];
+    const shared = await handleGenerateStory({ action: 'personal-render', id: 'kajava-ani-hero', age: 4, part: plan.findIndex((p) => !p.personal) }, env, quiet);
+    expect(shared.status).toBe(200);
+    expect(shared.body.personal).toBe(false);
+    const own = await handleGenerateStory({ action: 'personal-render', id: 'kajava-ani-hero', age: 4, part: plan.findIndex((p) => p.personal), name: 'केतू', gender: 'BOY' }, env, quiet);
+    expect(own.status).toBe(200);
+    expect(own.body.personal).toBe(true);
+    expect(String(own.body.base64).startsWith('UklGR')).toBe(true);
+  });
+});
+
 describe('backend text-to-speech', () => {
   it('approved stories come with an audio token and chunk count', async () => {
     const r = await handleGenerateStory({ request: { age: 4, category: 'magic', mode: 'RANDOM' } }, {}, quiet);

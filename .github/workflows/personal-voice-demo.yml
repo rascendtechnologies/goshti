@@ -1,0 +1,63 @@
+# Makes a personal story in Aaji's voice for one child (name + boy/girl) and gives a link to listen.
+# The parts that do not change are made once and reused; only the lines with the child's name are
+# made for that child. Actions → "Personal story voice (test)" → Run workflow.
+name: Personal story voice (test)
+
+on:
+  workflow_dispatch:
+    inputs:
+      story:
+        description: Personal story id
+        default: kajava-ani-hero
+      name:
+        description: Child's name in Devanagari (for example केतू)
+        required: true
+      gender:
+        description: BOY or GIRL
+        required: true
+        type: choice
+        options: [BOY, GIRL]
+      age:
+        description: Child's age (2-9)
+        default: '5'
+
+permissions:
+  contents: read
+
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: okcoskjdspwqnvcilbsf
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - name: Make the voice
+        env:
+          STORY: ${{ inputs.story }}
+          CHILD_NAME: ${{ inputs.name }}
+          GENDER: ${{ inputs.gender }}
+          AGE: ${{ inputs.age }}
+        run: |
+          export SUPABASE_ACCESS_TOKEN=$(printf '%s' "$SUPABASE_ACCESS_TOKEN" | grep -oE 'sbp_[A-Za-z0-9_]{20,}' | head -n 1 || true)
+          supabase projects api-keys --project-ref "$PROJECT_REF" -o json > "$RUNNER_TEMP/keys.json"
+          anon=$(jq -r '.[] | select(.name == "anon") | .api_key' "$RUNNER_TEMP/keys.json" | head -n 1)
+          service=$(jq -r '.[] | select(.name == "service_role") | .api_key' "$RUNNER_TEMP/keys.json" | head -n 1)
+          rm -f "$RUNNER_TEMP/keys.json"
+          if [ -z "$anon" ] || [ "$anon" = "null" ] || [ -z "$service" ] || [ "$service" = "null" ]; then
+            echo "::error::Could not read the Supabase keys (check the SUPABASE_ACCESS_TOKEN secret)."; exit 1
+          fi
+          echo "::add-mask::$anon"; echo "::add-mask::$service"
+          export SUPABASE_ANON_KEY="$anon" SUPABASE_SERVICE_KEY="$service"
+          export SUPABASE_URL="https://$PROJECT_REF.supabase.co"
+          export STORY_API_URL="https://$PROJECT_REF.supabase.co/functions/v1/generate-story"
+          npx tsx scripts/library/personal-demo.ts "$STORY" "$CHILD_NAME" "$GENDER" "$AGE"

@@ -24,6 +24,7 @@ export default function RootLayout() {
         <Stack.Screen name="stories" />
         <Stack.Screen name="great-people" />
         <Stack.Screen name="parent" />
+        <Stack.Screen name="report" />
       </Stack>
     </SafeAreaProvider>
   );

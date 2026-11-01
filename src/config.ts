@@ -42,6 +42,8 @@ export const config = {
   /** Where the parent reads the terms and privacy policy (shown beside the purchase buttons). */
   privacyUrl: process.env.EXPO_PUBLIC_PRIVACY_URL?.trim() || '',
   termsUrl: process.env.EXPO_PUBLIC_TERMS_URL?.trim() || '',
+  /** Where parents write about a story or a problem. */
+  supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support.rascend@gmail.com',
   storyBackend: resolveStoryBackend(),
   /** Public Supabase Storage folder with the library stories' Aaji voice, made once (see the Pre-render workflow). */
   libraryVoiceBase: supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/library-voice` : '',

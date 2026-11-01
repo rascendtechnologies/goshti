@@ -11,6 +11,8 @@ describe('usageKindFor', () => {
     expect(usageKindFor({ request: {} })).toBe('story');
     expect(usageKindFor({ continuation: 'x' })).toBeNull();
     expect(usageKindFor({ action: 'tts-render' })).toBe('voice');
+    expect(usageKindFor({ action: 'personal-render' })).toBe('voice');
+    expect(usageKindFor({ action: 'personal-plan' })).toBeNull();
     expect(usageKindFor({ action: 'tts-audition' })).toBe('audition');
     expect(usageKindFor({ action: 'tts-voices' })).toBeNull();
     expect(usageKindFor({ action: 'library-voice' })).toBeNull();

@@ -61,7 +61,7 @@ const RULES: Record<UsageKind, Rule[]> = {
 
 export function usageKindFor(body: unknown): UsageKind | null {
   const b = (body ?? {}) as { action?: unknown; request?: unknown; continuation?: unknown };
-  if (b.action === 'tts-render') return 'voice';
+  if (b.action === 'tts-render' || b.action === 'personal-render') return 'voice';
   if (b.action === 'tts-audition' || b.action === 'tts-voice-test') return 'audition';
   if (b.action === undefined && b.continuation === undefined && b.request !== undefined) return 'story';
   return null;

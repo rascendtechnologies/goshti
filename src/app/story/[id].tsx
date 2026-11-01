@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { getCategory } from '@engine/index';
 import {
@@ -121,6 +121,17 @@ export default function StoryPlayerScreen() {
           />
         </View>
         <SleepTimerControl secondsLeft={sleep.secondsLeft} onStart={sleep.start} onCancel={sleep.cancel} />
+        {/* For parents (it opens behind the parent check): tell us if a story is wrong or upsetting. */}
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="पालकांसाठी: गोष्टीबद्दल कळवा"
+          onPress={() => router.push({ pathname: '/report', params: { title: story.title } } as unknown as Href)}
+          style={styles.report}
+        >
+          <AppText variant="caption" muted center>
+            पालकांसाठी: गोष्टीबद्दल कळवा
+          </AppText>
+        </Pressable>
       </View>
     </Screen>
   );
@@ -133,4 +144,5 @@ const styles = StyleSheet.create({
   progress: { gap: spacing.xs },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
   controls: { alignItems: 'center' },
+  report: { alignSelf: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
 });

@@ -19,7 +19,7 @@ export interface PersonalCheck {
 }
 
 /** Most of the story's words that may sit in per-child sentences. */
-export const LIMITS = { warnShare: 0.3, errorShare: 0.45, warnNameSentences: 8, errorNameSentences: 12, longPersonalWords: 22 } as const;
+export const LIMITS = { warnShare: 0.3, errorShare: 0.45, warnNameSentences: 12, errorNameSentences: 18, longPersonalWords: 22 } as const;
 
 const SENTENCE = /[^.!?।]+[.!?।]+["”']?|[^.!?।]+$/g;
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

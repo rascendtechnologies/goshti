@@ -10,13 +10,13 @@ PLACEHOLDERS (use exactly these):
 - {नाव+ला}         the name with an ending: {नाव+ला}, {नाव+ने}, {नाव+चा}, {नाव+ची}, {नाव+चे}, {नाव+च्या}, {नाव+साठी}, {नाव+सोबत}, {नाव+कडे}
 - {गेला|गेली}      boy form | girl form (any word whose form depends on the child's gender)
 
-WHY THE RULES BELOW MATTER: Aaji's voice for every sentence WITHOUT a placeholder is recorded once and reused for every child. Every sentence WITH a placeholder is recorded again for each child. So fewer placeholder sentences = cheaper and more natural. Aim for under 30% of the story's words in placeholder sentences.
+WHY THE RULES BELOW MATTER: Aaji's voice for every sentence WITHOUT a placeholder is recorded once and reused for every child. Every sentence WITH a placeholder is recorded again for each child. So fewer placeholder sentences = cheaper and more natural. Aim for under 30% of the story's words in placeholder sentences (short sentences keep it low).
 
 RULES
-1. Name only where it matters. Use the name in about 6 sentences at most: the opening, 2–3 key moments, the child's own line that says the name (if the story needs it), and the closing "शुभ रात्री, {नाव}!". Everywhere else write about "the child" without a name or gender: the sound, the place, what the other characters do.
-2. Keep gender out of every other sentence. Rewrite so no verb depends on the child's gender: use other characters as the subject ("काजवा हसला"), sounds and things ("दगड दिसू लागले"), passive or neutral wording ("वाट सापडली"), and plurals.
-3. The child's OWN spoken lines: use forms that are the same for a boy and a girl. First-person FUTURE and IMPERATIVE are neutral ("मी तुला घरी पोहोचवीन", "चल, आपण जाऊ", "काळजी करू नकोस"). Avoid first-person present with gender ("नेतो/नेते").
-4. Dialogue tags: do not attach the child's name or a gendered verb to every quote. Put the child's quotes after a short sentence that already names the child, or let the voice change show who speaks. Never write a tag like "{नाव} {म्हणाला|म्हणाली}" more than twice in the story.
+1. The child's NAME is the heart of the story: use it whenever the child does something (about 8–12 sentences), but keep every one of those sentences short and on its own. Never call the child "बाळ" or "the child" in the narration.
+2. Make the child's actions gender-free with the ने-form. In the past tense, a verb that takes an object agrees with the OBJECT, not the doer, so it is identical for boy and girl: "{नाव+ने} दार उघडलं", "{नाव+ने} विचारलं", "{नाव+ने} हसून सांगितलं", "{नाव+ने} टाळ्या वाजवल्या". Prefer these. Also gender-free: "आजी आणि {नाव} बसले होते", "{नाव+ला} मजा आली", "{नाव+चे} डोळे जड झाले".
+3. Avoid verbs of the child that would change for a girl (गेला/गेली, आला/आली, हसला/हसली, पळाला/पळाली — these do NOT take ने). If you truly need one, write it as a short placeholder sentence: "{नाव} {आला|आली}." Use at most 3 in the story. Everything else (other characters, things, sounds, places) never needs the child's gender.
+4. The child's OWN spoken lines: use forms that are the same for a boy and a girl: first-person future and imperative ("मी तुला घरी पोहोचवीन", "चल, आपण जाऊ"). Avoid first-person present with gender ("नेतो/नेते"). Dialogue tags use the ने-form: "…", {नाव+ने} म्हटलं.
 5. Put every name-or-gender sentence on its own: short (under 15 words), one idea, so it can be recorded alone. Do not hide the name inside a long sentence of other content.
 6. Every placeholder sentence must still make sense and read warmly; the sentences around it must work for any child.
 7. Marathi: natural, simple spoken Marathi for the age. No Hindi words. No joined consonants in character names for ages 2–5. Short sentences, repetition, sound words (टप टप, लुकलुक).

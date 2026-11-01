@@ -23,8 +23,9 @@ export class ChildProfileService {
     const gender = input.gender === 'BOY' || input.gender === 'GIRL' ? input.gender : existing?.gender;
     const profile: ChildProfile = { id: existing?.id ?? createId(), name, age: input.age, ...(gender ? { gender } : {}) };
     await this.storage.saveChildProfile(profile);
-    // Stories prepared in advance star the child — drop them if the name or boy/girl changed.
-    if (existing && (existing.name !== profile.name || existing.gender !== profile.gender)) {
+    // Stories prepared in advance star the child and suit their age — drop them if the name,
+    // boy/girl or age changed.
+    if (existing && (existing.name !== profile.name || existing.gender !== profile.gender || existing.age !== profile.age)) {
       await this.storage.savePreparedStories({});
     }
     return profile;

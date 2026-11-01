@@ -4,7 +4,7 @@ import { Linking, StyleSheet, Switch, View } from 'react-native';
 
 import { BRAND } from '@/brand';
 import { config } from '@/config';
-import { AppText, BackButton, BigButton, GenderSelector, ParentGate, PlanComparison, Screen } from '@/components';
+import { AgeSelector, AppText, BackButton, BigButton, GenderSelector, ParentGate, PlanComparison, Screen } from '@/components';
 import { useChildProfile } from '@/hooks/useChildProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { BillingError, type BillingOffer, deleteAllPersonalData, feedbackService, PLANS, REACTIONS, subscriptionService, uiSoundService, type StoryReaction } from '@/services';
@@ -147,6 +147,11 @@ function ParentSettings() {
           <AppText variant="label">
             {profile.name} · {toMarathiDigits(profile.age)} वर्षं
           </AppText>
+          {/* Birthdays happen: change the age here without losing anything. */}
+          <AgeSelector
+            value={profile.age}
+            onChange={(age) => void saveProfile({ name: profile.name, age, gender: profile.gender })}
+          />
           {/* The child is the hero of new stories — Marathi needs boy or girl (गेला / गेली). */}
           <AppText variant="caption" muted>
             नव्या गोष्टींमध्ये {profile.name} मुख्य पात्र असतं. योग्य मराठी शब्दांसाठी (गेला / गेली) निवडा:

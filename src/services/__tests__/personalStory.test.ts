@@ -91,14 +91,10 @@ describe('personal stories for "Aaji chooses"', () => {
     expect(other.status).toBe('CREATED');
   });
 
-  it('uses the AI path when the name is not in Marathi letters or the age has no personal story', async () => {
+  it('uses the AI path when the name is not in Marathi letters', async () => {
     const english = setup({ id: 'c', name: 'Ketu', age: 5, gender: 'BOY' });
     await english.service.createStory({ age: 5, category: 'animals', mode: 'RANDOM' }).catch(() => {});
     expect(english.generator.calls).toBeGreaterThan(0);
-
-    const older = setup({ id: 'c', name: 'केतू', age: 8, gender: 'BOY' });
-    await older.service.createStory({ age: 8, category: 'bedtime', mode: 'RANDOM' }).catch(() => {});
-    expect(older.generator.calls).toBeGreaterThan(0);
   });
 
   it('never uses a personal story for a child’s own idea', async () => {

@@ -14,6 +14,7 @@ import { cleanChildName, hasPlaceholder, renderTemplate, type ChildGender, type 
 export { checkPersonalTemplate, LIMITS } from './check';
 export { personalPrompt, PERSONAL_STORY_PROMPT } from './prompt';
 export { allPersonalStories, cleanChildName, findPersonalStory, hasPlaceholder, PERSONAL_STORIES, renderTemplate, setCatalogStories };
+export { DRAFT_PERSONAL_STORIES } from './drafts';
 export { catalogRowToStory, parseCatalogRows, type CatalogRow } from './catalog';
 export type { ChildGender, PersonalChild, PersonalStory };
 

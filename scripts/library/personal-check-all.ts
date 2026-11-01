@@ -1,8 +1,8 @@
 import { checkPersonalTemplate } from '../../story-engine/personal/check';
-import { PERSONAL_STORIES } from '../../story-engine/personal';
+import { DRAFT_PERSONAL_STORIES, PERSONAL_STORIES } from '../../story-engine/personal';
 
 let bad = 0;
-for (const s of PERSONAL_STORIES) {
+for (const s of [...PERSONAL_STORIES, ...DRAFT_PERSONAL_STORIES]) {
   const r = checkPersonalTemplate(s.template, { quoteSpeakers: s.quoteSpeakers });
   console.log(`${s.id}: ${r.stats.nameSentences} name sentences, ${Math.round(r.stats.personalShare * 100)}% per-child, ${r.stats.personalParts} recordings`);
   for (const w of r.warnings) console.log(`   warning: ${w}`);

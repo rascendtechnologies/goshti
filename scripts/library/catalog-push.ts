@@ -3,14 +3,15 @@
  *
  *   SUPABASE_URL=… SUPABASE_SERVICE_KEY=… npx tsx scripts/library/catalog-push.ts [--publish] [--file rows.json] [story-id …]
  *
- * With no --file it copies the stories built into the code (all, or the ids you name). Rows are
+ * With no --file it copies the stories built into the code (all, or the ids you name); with --drafts it
+ * copies the not-yet-reviewed stories in story-engine/personal/drafts.ts instead. Rows are
  * saved as DRAFTS unless you pass --publish. Every row is checked first; a row that fails is not sent.
  * Voices for a new or changed story must be pre-rendered (Actions → "Pre-render personal story voices")
  * BEFORE it is published, otherwise the first listeners wait for the shared parts.
  */
 import { readFileSync } from 'node:fs';
 
-import { catalogRowToStory, PERSONAL_STORIES, type CatalogRow } from '../../story-engine/personal';
+import { catalogRowToStory, DRAFT_PERSONAL_STORIES, PERSONAL_STORIES, type CatalogRow } from '../../story-engine/personal';
 
 const base = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const service = process.env.SUPABASE_SERVICE_KEY ?? '';
@@ -21,13 +22,14 @@ if (!base || !service) {
 
 const args = process.argv.slice(2);
 const publish = args.includes('--publish');
+const drafts = args.includes('--drafts');
 const fileAt = args.indexOf('--file');
 const file = fileAt >= 0 ? args[fileAt + 1] : '';
 const ids = args.filter((a, i) => !a.startsWith('--') && !(fileAt >= 0 && i === fileAt + 1));
 
 const rows: CatalogRow[] = file
   ? (JSON.parse(readFileSync(file, 'utf8')) as CatalogRow[])
-  : PERSONAL_STORIES.filter((s) => !ids.length || ids.includes(s.id)).map((s) => ({
+  : (drafts ? DRAFT_PERSONAL_STORIES : PERSONAL_STORIES).filter((s) => !ids.length || ids.includes(s.id)).map((s) => ({
       id: s.id,
       title: s.title,
       age_band: s.ageBand,

@@ -74,6 +74,9 @@ export class BackendStoryGenerator implements StoryGenerator {
     private readonly url: string,
     private readonly headers: Record<string, string>,
     private readonly timeoutMs: number,
+    /** Longest one backend step may take before it is asked again (the server stops a step at ~135 s). */
+    private readonly stepTimeoutMs = 160_000,
+    private readonly retryDelayMs = 1_500,
   ) {}
 
   /**
@@ -81,6 +84,37 @@ export class BackendStoryGenerator implements StoryGenerator {
    * continuation token until the story is finished (keeps each request under the
    * Edge Function time limit and lets us show real progress).
    */
+  /**
+   * One backend step, retried when the connection drops or the step hangs (for example when the
+   * app was in the background): the continuation token carries the story so far, so asking again
+   * is safe. A step the server answers (even with an error) is never retried here.
+   */
+  private async postStep(payload: Record<string, unknown>, overall: AbortSignal): Promise<Response> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const step = new AbortController();
+      const onOverall = () => step.abort();
+      overall.addEventListener('abort', onOverall);
+      const timer = setTimeout(() => step.abort(), this.stepTimeoutMs);
+      try {
+        return await fetch(this.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...this.headers },
+          body: JSON.stringify(payload),
+          signal: step.signal,
+        });
+      } catch (e) {
+        lastError = e;
+        if (overall.aborted) break;
+        await new Promise((r) => setTimeout(r, this.retryDelayMs));
+      } finally {
+        clearTimeout(timer);
+        overall.removeEventListener('abort', onOverall);
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error('network error');
+  }
+
   async generate(request: StoryRequest, onProgress?: ProgressListener): Promise<GenerationResult> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -88,12 +122,7 @@ export class BackendStoryGenerator implements StoryGenerator {
     let payload: Record<string, unknown> = { request, deviceId };
     try {
       for (let step = 0; step < 20; step++) {
-        const res = await fetch(this.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...this.headers },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
+        const res = await this.postStep(payload, controller.signal);
         const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
         if (!body || typeof body.status !== 'string') {
           return { status: 'FAILED', reason: `backend returned HTTP ${res.status}` };

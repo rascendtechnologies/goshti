@@ -10,7 +10,9 @@ name: Publish test app to phone
 
 on:
   push:
-    branches: [main]
+    # main -> the "preview" channel; any other listed branch -> a channel named after the branch
+    # (open it in Expo Go with exp://u.expo.dev/<projectId>?channel-name=<branch>).
+    branches: [main, delight]
     paths:
       - 'src/**'
       - 'assets/**'
@@ -98,10 +100,16 @@ jobs:
           export EXPO_PUBLIC_DEFAULT_PLAN=PLUS
           export EXPO_PUBLIC_TEST_TOOLS=true
           msg=$(git log -1 --pretty=%s | cut -c 1-120)
-          if ! npx eas-cli@latest update --channel preview --environment preview --message "$msg" --json --non-interactive > "$RUNNER_TEMP/update.json" 2> "$RUNNER_TEMP/update.err"; then
+          channel=preview
+          if [ "$GITHUB_REF_NAME" != "main" ]; then
+            channel=$(printf '%s' "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9\n' '-')
+            npx eas-cli@latest channel:view "$channel" --non-interactive > /dev/null 2>&1 || npx eas-cli@latest channel:create "$channel" --non-interactive
+          fi
+          echo "CHANNEL=$channel"
+          if ! npx eas-cli@latest update --channel "$channel" --environment preview --message "$msg" --json --non-interactive > "$RUNNER_TEMP/update.json" 2> "$RUNNER_TEMP/update.err"; then
             echo "::error title=Publish failed::$(tail -n 15 "$RUNNER_TEMP/update.err" | sed ':a;N;$!ba;s/\n/%0A/g')"
             exit 1
           fi
           id=$(node -e "console.log(require('./app.json').expo.extra.eas.projectId)")
           group=$(jq -r '.[0].group // empty' "$RUNNER_TEMP/update.json")
-          echo "::notice title=Open in Expo Go::exp://u.expo.dev/$id?channel-name=preview  (update group $group)"
+          echo "::notice title=Open in Expo Go::exp://u.expo.dev/$id?channel-name=$channel  (update group $group)"

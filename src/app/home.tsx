@@ -9,6 +9,7 @@ import { useChildProfile } from '@/hooks/useChildProfile';
 import { useStoryWarmUp } from '@/hooks/useStoryWarmUp';
 import { uiSoundService } from '@/services';
 import { colors, radius, spacing, touch } from '@/theme';
+import { aajiGreeting } from '@/utils/greeting';
 
 /** 3. Home — pick a category, then who chooses the story. */
 export default function HomeScreen() {
@@ -96,7 +97,7 @@ export default function HomeScreen() {
         </AppText>
         {profile ? (
           <AppText variant="label" muted>
-            नमस्कार {profile.name}!
+            {aajiGreeting(profile.name)}
           </AppText>
         ) : null}
         <AppText variant="title">आज कोणती गोष्ट ऐकायची?</AppText>

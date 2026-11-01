@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['story-engine/**/*.test.ts', 'backend/**/*.test.ts', 'src/services/**/*.test.ts'],
+    include: ['story-engine/**/*.test.ts', 'backend/**/*.test.ts', 'src/services/**/*.test.ts', 'src/utils/**/*.test.ts'],
     environment: 'node',
   },
 });

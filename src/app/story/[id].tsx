@@ -11,9 +11,12 @@ import {
   ProgressBar,
   RoundButton,
   Screen,
+  SleepTimerControl,
   StoryFeedback,
 } from '@/components';
+import { useSleepTimer } from '@/hooks/useSleepTimer';
 import { useStoryPlayer } from '@/hooks/useStoryPlayer';
+import { audioService } from '@/services';
 import { colors, spacing } from '@/theme';
 import { formatDuration } from '@/utils/format';
 import { sceneFor } from '@/utils/scene';
@@ -25,6 +28,9 @@ export default function StoryPlayerScreen() {
   const [openedAt] = useState(() => new Date());
   const { story, notFound, status, progress, isFavourite, togglePlay, toggleFavourite, reaction, setReaction, replacementId } =
     useStoryPlayer(id, { autoplay: autoplay === '1' });
+
+  // Bedtime: the story stops by itself when the chosen minutes are up.
+  const sleep = useSleepTimer(() => void audioService.pause());
 
   // Aaji's voice couldn't be made for this story: play one of her ready-made stories instead.
   useEffect(() => {
@@ -114,6 +120,7 @@ export default function StoryPlayerScreen() {
             onPress={togglePlay}
           />
         </View>
+        <SleepTimerControl secondsLeft={sleep.secondsLeft} onStart={sleep.start} onCancel={sleep.cancel} />
       </View>
     </Screen>
   );

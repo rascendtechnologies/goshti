@@ -51,7 +51,8 @@
     "eas:env": "node scripts/eas-env.mjs",
     "build:android-test": "npx eas-cli build --platform android --profile preview",
     "add-retelling": "tsx scripts/library/add-retelling.ts",
-    "art": "node scripts/art/build-manifest.mjs"
+    "art": "node scripts/art/build-manifest.mjs",
+    "personal:check": "tsx scripts/library/personal-check.ts"
   },
   "private": true
 }

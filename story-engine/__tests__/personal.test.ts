@@ -73,3 +73,17 @@ describe.each(PERSONAL_STORIES)('personal story $id', (story) => {
     for (const p of a.filter((x) => x.personal)) expect(p.chunk.parts.map((x) => x.text).join('').length).toBeLessThan(400);
   });
 });
+
+describe('checkPersonalTemplate', () => {
+  it('flags a story that is mostly per-child sentences', async () => {
+    const { checkPersonalTemplate } = await import('../personal/check');
+    const bad = Array.from({ length: 14 }, () => '{नाव} हसला.').join(' ');
+    expect(checkPersonalTemplate(bad).errors.length).toBeGreaterThan(0);
+  });
+  it('accepts a story with the name in a few short sentences', async () => {
+    const { checkPersonalTemplate } = await import('../personal/check');
+    const shared = Array.from({ length: 12 }, (_, i) => `ओढ्याचं पाणी खळखळ वाहत होतं आणि वारा गाणं म्हणत होता ${i}.`).join(' ');
+    const ok = checkPersonalTemplate(`{नाव} आजीच्या अंगणात आला. ${shared} शुभ रात्री, {नाव}!`);
+    expect(ok.errors).toEqual([]);
+  });
+});

@@ -9,6 +9,8 @@ import type { AudioSegment } from '../types';
 import { findPersonalStory, PERSONAL_STORIES, type PersonalStory } from './stories';
 import { cleanChildName, hasPlaceholder, renderTemplate, type ChildGender, type PersonalChild } from './template';
 
+export { checkPersonalTemplate, LIMITS } from './check';
+export { personalPrompt, PERSONAL_STORY_PROMPT } from './prompt';
 export { cleanChildName, findPersonalStory, hasPlaceholder, PERSONAL_STORIES, renderTemplate };
 export type { ChildGender, PersonalChild, PersonalStory };
 

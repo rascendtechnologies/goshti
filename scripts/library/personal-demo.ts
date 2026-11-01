@@ -131,37 +131,51 @@ async function main() {
   let madeShared = 0;
   let madePersonal = 0;
 
-  for (const part of parts) {
-    let wav: Uint8Array | null = null;
-    let what: string;
-    let pauseMs = part.chunk.pauseAfterMs;
-    if (!part.personal) {
-      const path = `personal/${story!.id}/${variant}/shared-${part.index}-${part.hash}.wav`;
-      wav = await download(path);
-      if (wav) {
-        reused++;
-        what = 'reused (made earlier)';
+  // Parts are independent, so make several at a time (the first run makes every shared part;
+  // later runs reuse them and only the child's own parts are made).
+  const CONCURRENCY = 6;
+  const results: ({ pcm: Pcm; pauseMs: number; row: string } | undefined)[] = new Array(parts.length);
+  let next = 0;
+  const started = Date.now();
+  async function work() {
+    while (next < parts.length) {
+      const part = parts[next++];
+      let wav: Uint8Array | null = null;
+      let what: string;
+      let pauseMs = part.chunk.pauseAfterMs;
+      if (!part.personal) {
+        const path = `personal/${story!.id}/${variant}/shared-${part.index}-${part.hash}.wav`;
+        wav = await download(path);
+        if (wav) {
+          reused++;
+          what = 'reused (made earlier)';
+        } else {
+          const r = await render(part.index, false);
+          wav = new Uint8Array(Buffer.from(String(r.base64), 'base64'));
+          await upload(path, wav, 'audio/wav');
+          madeShared++;
+          pauseMs = Number(r.pauseAfterMs) || pauseMs;
+          what = 'made now, kept for every child';
+        }
       } else {
-        const r = await render(part.index, false);
+        const r = await render(part.index, true);
         wav = new Uint8Array(Buffer.from(String(r.base64), 'base64'));
-        await upload(path, wav, 'audio/wav');
-        madeShared++;
         pauseMs = Number(r.pauseAfterMs) || pauseMs;
-        what = 'made now, kept for every child';
+        madePersonal++;
+        what = `made for ${name}`;
       }
-    } else {
-      const r = await render(part.index, true);
-      wav = new Uint8Array(Buffer.from(String(r.base64), 'base64'));
-      pauseMs = Number(r.pauseAfterMs) || pauseMs;
-      madePersonal++;
-      what = `made for ${name}`;
+      const pcm = readWav(wav);
+      const text = part.chunk.parts.map((x) => x.text).join(' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      const secs = pcm.data.length / ((pcm.rate * pcm.channels * pcm.bits) / 8);
+      results[part.index] = { pcm, pauseMs, row: `| ${part.index} | ${part.personal ? '**for this child**' : 'shared'} | ${what}: ${text.slice(0, 60)} | ${secs.toFixed(1)} |` };
+      console.log(`${String(part.index).padStart(2)}/${parts.length - 1} ${part.personal ? 'PERSONAL' : 'shared  '} ${what} (${Math.round((Date.now() - started) / 1000)}s)`);
     }
-    const pcm = readWav(wav);
-    pcms.push({ pcm, pauseMs });
-    const text = part.chunk.parts.map((x) => x.text).join(' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-    const secs = pcm.data.length / ((pcm.rate * pcm.channels * pcm.bits) / 8);
-    rows.push(`| ${part.index} | ${part.personal ? '**for this child**' : 'shared'} | ${what}: ${text.slice(0, 60)} | ${secs.toFixed(1)} |`);
-    console.log(`${String(part.index).padStart(2)} ${part.personal ? 'PERSONAL' : 'shared  '} ${what}`);
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, parts.length) }, work));
+  for (const r of results) {
+    if (!r) throw new Error('a part was not made');
+    pcms.push({ pcm: r.pcm, pauseMs: r.pauseMs });
+    rows.push(r.row);
   }
 
   const first = pcms[0].pcm;

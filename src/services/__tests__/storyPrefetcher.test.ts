@@ -209,6 +209,17 @@ describe('the child as the hero (app side)', () => {
     expect(await storage.getPreparedStories()).toEqual({});
   });
 
+  it('drops prepared stories when the child moves to another age band', async () => {
+    const { storage, prefetcher } = setup();
+    const profiles = new ChildProfileService(storage);
+    await profiles.saveProfile({ name: 'आर्या', age: 7, gender: 'GIRL' });
+    prefetcher.prepare({ category: 'space', age: 7, childName: 'आर्या', childGender: 'GIRL' });
+    await settle();
+    expect(Object.keys(await storage.getPreparedStories())).toEqual(['space']);
+    await profiles.saveProfile({ name: 'आर्या', age: 8 });
+    expect(await storage.getPreparedStories()).toEqual({});
+  });
+
   it('knows before anything plays whether a new story can be made this month', async () => {
     const { service, subscription } = setup();
     expect(await service.canCreateStory()).toBe(true);

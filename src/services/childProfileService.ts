@@ -1,4 +1,4 @@
-import { isChildAge } from '@engine/index';
+import { isChildAge, PROFILES } from '@engine/index';
 
 import { createId } from '@/utils/id';
 import type { ChildAge, ChildGender, ChildProfile } from '@/types/models';
@@ -8,6 +8,10 @@ import type { StorageService } from './storageService';
 export const MAX_CHILD_NAME_LENGTH = 30;
 
 /** Thin domain layer over storage so screens don't validate or build profiles themselves. */
+function bandOf(age: ChildAge): string | undefined {
+  return Object.values(PROFILES).find((p) => (p.ages as readonly number[]).includes(age))?.ageBand;
+}
+
 export class ChildProfileService {
   constructor(private readonly storage: StorageService) {}
 
@@ -23,9 +27,12 @@ export class ChildProfileService {
     const gender = input.gender === 'BOY' || input.gender === 'GIRL' ? input.gender : existing?.gender;
     const profile: ChildProfile = { id: existing?.id ?? createId(), name, age: input.age, ...(gender ? { gender } : {}) };
     await this.storage.saveChildProfile(profile);
-    // Stories prepared in advance star the child and suit their age — drop them if the name,
-    // boy/girl or age changed.
-    if (existing && (existing.name !== profile.name || existing.gender !== profile.gender || existing.age !== profile.age)) {
+    // Stories prepared in advance star the child and are written for an age band — drop them if
+    // the name, boy/girl or age band changed (a birthday inside the same band keeps them).
+    if (
+      existing &&
+      (existing.name !== profile.name || existing.gender !== profile.gender || bandOf(existing.age) !== bandOf(profile.age))
+    ) {
       await this.storage.savePreparedStories({});
     }
     return profile;

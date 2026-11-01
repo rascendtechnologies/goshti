@@ -64,6 +64,9 @@ export function checkPersonalTemplate(template: string, meta: { quoteSpeakers?: 
     if (!personal && /(तिने|तिला|तिचा|तिची|तिचे|तिच्या|त्याने|त्याला|त्याचा|त्याची|त्याचे|त्याच्या)(?![^\s]*\{)/.test(s) && !/काजव|ससा|हत्ती|प्राणी/.test(s)) {
       warnings.push(`shared sentence uses a he/she word — make sure it is not about the child: "${s.slice(0, 50)}"`);
     }
+    if (/^\s*आजी आणि \{नाव[^}]*\}(?![^.!?]*दोघांनी)[^.!?]*(केला|केली|केलं|म्हणाले|म्हटलं|प्याले|वाजवला|दिला|दिली)/.test(s)) {
+      warnings.push(`"आजी आणि {नाव}" with an object verb needs "दोघांनी" or the ने-form: "${s.slice(0, 50)}"`);
+    }
     inRun = personal;
   }
 

@@ -61,6 +61,9 @@ export function checkPersonalTemplate(template: string, meta: { quoteSpeakers?: 
       if (!inRun) runs++;
       if (w > LIMITS.longPersonalWords) warnings.push(`long sentence with a placeholder (${w} words) — shorten it so only a few words are re-recorded: "${s.slice(0, 50)}…"`);
     }
+    if (!personal && /(तिने|तिला|तिचा|तिची|तिचे|तिच्या|त्याने|त्याला|त्याचा|त्याची|त्याचे|त्याच्या)(?![^\s]*\{)/.test(s) && !/काजव|ससा|हत्ती|प्राणी/.test(s)) {
+      warnings.push(`shared sentence uses a he/she word — make sure it is not about the child: "${s.slice(0, 50)}"`);
+    }
     inRun = personal;
   }
 

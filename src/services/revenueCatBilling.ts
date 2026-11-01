@@ -77,11 +77,11 @@ export class RevenueCatBilling implements BillingClient {
   }
 
   async purchase(period: BillingPeriod): Promise<PurchaseOutcome> {
-    const rc = await this.sdk();
-    const current = (await rc.getOfferings()).current;
-    const pkg = period === 'month' ? current?.monthly : current?.annual;
-    if (!pkg) throw new BillingError('This plan is not available right now.');
     try {
+      const rc = await this.sdk();
+      const current = (await rc.getOfferings()).current;
+      const pkg = period === 'month' ? current?.monthly : current?.annual;
+      if (!pkg) throw new BillingError('This plan is not available right now.');
       const { customerInfo } = await rc.purchasePackage(pkg);
       if (!toStatus(customerInfo).plusActive) throw new BillingError('Purchase is not active yet.');
       return 'purchased';

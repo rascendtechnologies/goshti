@@ -3,4 +3,18 @@ import type { ImageSourcePropType } from 'react-native';
 
 import type { ArtSlot } from './slots';
 
-export const ART_MANIFEST: Partial<Record<ArtSlot, ImageSourcePropType>> = {};
+export const ART_MANIFEST: Partial<Record<ArtSlot, ImageSourcePropType>> = {
+  'category-adventure': require('../../assets/art/category-adventure.png'),
+  'category-animals': require('../../assets/art/category-animals.png'),
+  'category-bedtime': require('../../assets/art/category-bedtime.png'),
+  'category-festivals': require('../../assets/art/category-festivals.png'),
+  'category-funny': require('../../assets/art/category-funny.png'),
+  'category-magic': require('../../assets/art/category-magic.png'),
+  'category-mystery': require('../../assets/art/category-mystery.png'),
+  'category-space': require('../../assets/art/category-space.png'),
+  'peti': require('../../assets/art/peti.png'),
+  'scene-courtyard': require('../../assets/art/scene-courtyard.jpg'),
+  'scene-night': require('../../assets/art/scene-night.jpg'),
+  'scene-room': require('../../assets/art/scene-room.jpg'),
+  'welcome': require('../../assets/art/welcome.jpg'),
+};

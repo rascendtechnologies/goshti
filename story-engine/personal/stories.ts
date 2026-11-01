@@ -7,6 +7,8 @@ import type { StoryCategory } from '../categories';
 import type { AgeBand } from '../profiles';
 import type { VoiceStyle } from '../schemas';
 import type { SfxId } from '../sfx';
+import { PERSONAL_STORIES_6_7 } from './stories67';
+import { PERSONAL_STORIES_8_9 } from './stories89';
 
 export interface PersonalStory {
   id: string;
@@ -22,7 +24,7 @@ export interface PersonalStory {
   template: string;
 }
 
-export const PERSONAL_STORIES: PersonalStory[] = [
+const BASE_STORIES: PersonalStory[] = [
   {
     id: 'kajava-ani-hero',
     title: 'छोटा काजवा आणि {नाव}',
@@ -260,6 +262,8 @@ export const PERSONAL_STORIES: PersonalStory[] = [
 रॉकेट हळूहळू खाली आलं. अंगणात आजी वाट बघत होती. "आता झोपायची वेळ," चांदोबा दुरून म्हणाला. शुभ रात्री, {नाव}!`,
   },
 ];
+
+export const PERSONAL_STORIES: PersonalStory[] = [...BASE_STORIES, ...PERSONAL_STORIES_6_7, ...PERSONAL_STORIES_8_9];
 
 export function findPersonalStory(id: string): PersonalStory | undefined {
   return PERSONAL_STORIES.find((s) => s.id === id);

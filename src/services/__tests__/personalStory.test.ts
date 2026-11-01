@@ -97,7 +97,7 @@ describe('personal stories for "Aaji chooses"', () => {
     expect(english.generator.calls).toBeGreaterThan(0);
 
     const older = setup({ id: 'c', name: 'केतू', age: 8, gender: 'BOY' });
-    await older.service.createStory({ age: 8, category: 'animals', mode: 'RANDOM' }).catch(() => {});
+    await older.service.createStory({ age: 8, category: 'bedtime', mode: 'RANDOM' }).catch(() => {});
     expect(older.generator.calls).toBeGreaterThan(0);
   });
 

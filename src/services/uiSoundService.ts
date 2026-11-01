@@ -35,7 +35,7 @@ export interface UiSoundService {
 /** The waiting song is softer than Aaji but clearly audible. */
 const WAITING_SONG_LEVEL = 0.45;
 /** After the song: a quiet instrumental loop until the story is ready. */
-const WAITING_LOOP_LEVEL = 0.22;
+const WAITING_LOOP_LEVEL = 0.4;
 const LOOP_FADE_IN_MS = 200;
 /**
  * The song, the loop and every sung line keep the same 0.8 s pulse and are a whole number of
